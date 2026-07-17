@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-memory-lab"
+version = "0.1.0"
+description = "Learn how LLM agent memory works from scratch."
+readme = "README.md"
+requires-python = ">=3.8"
+
+dependencies = [
+    "openai>=1.93.0",
+    "python-dotenv>=1.0.1"
+]
+
+[project.scripts]
+memory-lab = "memory_lab.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
