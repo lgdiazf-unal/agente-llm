@@ -1,26 +1,36 @@
+"""
+main.py
+
+Punto de entrada de la aplicación.
+"""
+
 from memory_lab.llm import call_llm
+from memory_lab.models.prompt_context import PromptContext
+from memory_lab.prompt_builder import PromptBuilder
+from memory_lab.utils.printer import print_text, print_title
 
 
-def main():
+def main() -> None:
 
-    print("=" * 70)
-    print("LLM MEMORY LAB")
-    print("FASE 0")
-    print("=" * 70)
+    print_title("LLM MEMORY LAB")
+    print_text("Fase 1 - Prompt Builder")
 
-    user_prompt = input("\nUsuario: ")
+    user_message = input("\nUsuario: ")
 
-    messages = [
-        {
-            "role": "user",
-            "content": user_prompt,
-        }
-    ]
+    context = PromptContext(
+        user_message=user_message,
+    )
+
+    builder = PromptBuilder()
+
+    messages = builder.build(context)
 
     response = call_llm(messages)
 
-    print("\n" + "=" * 70)
-    print("RESPUESTA FINAL")
-    print("=" * 70)
+    print_title("RESPUESTA FINAL")
 
-    print(response)
+    print_text(response)
+
+
+if __name__ == "__main__":
+    main()
