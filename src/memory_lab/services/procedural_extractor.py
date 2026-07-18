@@ -19,6 +19,9 @@ from memory_lab.prompts.procedural_prompt import (
 from memory_lab.utils.conversation_formatter import (
     format_conversation,
 )
+from memory_lab.utils.json_parser import (
+    parse_json,
+)
 
 
 class ProceduralExtractor:
@@ -45,12 +48,16 @@ class ProceduralExtractor:
 
         response = call_llm(
             messages,
-        ).strip()
+        )
 
-        if response.upper() == "NONE":
+        data = parse_json(
+            response,
+        )
+
+        if data["action"] == "none":
 
             return None
 
         return Procedure.create(
-            content=response,
+            content=data["procedure"],
         )
