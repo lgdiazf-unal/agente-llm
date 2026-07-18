@@ -1,29 +1,27 @@
 """
 main.py
-
-Punto de entrada de la aplicación.
 """
 
 from memory_lab.llm import call_llm
 from memory_lab.models.conversation import Conversation
 from memory_lab.models.prompt_context import PromptContext
 from memory_lab.prompt_builder import PromptBuilder
-from memory_lab.utils.printer import (
-    print_text,
-    print_title,
-)
-from memory_lab.views.conversation_view import show as show_conversation
-from memory_lab.views.prompt_builder_view import show as  show_prompt
+from memory_lab.services.episode_extractor import EpisodeExtractor
+from memory_lab.utils.printer import print_text, print_title
+from memory_lab.views.conversation_view import show_conversation
+from memory_lab.views.prompt_builder_view import show_prompt
 
 
 def main() -> None:
 
     print_title("LLM MEMORY LAB")
-    print_text("Fase 2 - Working Memory")
+    print_text("Fase 3 - Episodic Memory")
 
     conversation = Conversation()
 
     builder = PromptBuilder()
+
+    extractor = EpisodeExtractor()
 
     while True:
 
@@ -31,56 +29,45 @@ def main() -> None:
 
         user_message = input("Usuario: ")
 
-        if user_message.lower() in {"exit", "quit"}:
-            print("\nHasta luego 👋")
+        if user_message.lower() == "exit":
             break
 
-        #
-        # Actualizar memoria de trabajo
-        #
+        if user_message.lower() == "/memorize":
+
+            if not conversation.messages:
+
+                print_title("EPISODE")
+
+                print_text("No hay conversación.")
+
+                continue
+
+            episode = extractor.extract(conversation)
+
+            print_title("EPISODE")
+
+            print_text(episode.summary)
+
+            continue
+
         conversation.add_user_message(user_message)
 
-        #
-        # Mostrar memoria actual
-        #
         show_conversation(conversation)
 
-        #
-        # Construir contexto
-        #
         context = PromptContext(
             conversation=conversation,
         )
 
-        #
-        # Construir prompt
-        #
         messages = builder.build(context)
 
-        #
-        # Mostrar prompt final
-        #
         show_prompt(messages)
 
-        #
-        # Llamar al modelo
-        #
         response = call_llm(messages)
 
-        #
-        # Actualizar memoria con la respuesta
-        #
         conversation.add_assistant_message(response)
 
-        #
-        # Mostrar memoria actualizada
-        #
-        show_conversation(conversation)
-
-        #
-        # Mostrar respuesta
-        #
         print_title("ASSISTANT")
+
         print_text(response)
 
 

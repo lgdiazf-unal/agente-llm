@@ -6,7 +6,7 @@ from memory_lab.utils.printer import (
 )
 
 
-def show(conversation: Conversation) -> None:
+def show_conversation(conversation: Conversation) -> None:
 
     print_title("WORKING MEMORY")
 

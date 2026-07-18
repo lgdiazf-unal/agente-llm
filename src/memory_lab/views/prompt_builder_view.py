@@ -4,7 +4,7 @@ from memory_lab.utils.printer import (
 )
 
 
-def show(messages: list[dict]) -> None:
+def show_prompt(messages: list[dict]) -> None:
 
     print_title("PROMPT")
 
