@@ -20,7 +20,7 @@ from memory_lab.utils.conversation_formatter import (
     format_conversation,
 )
 from memory_lab.utils.json_parser import (
-    parse_json,
+    parse_llm_json,
 )
 
 
@@ -50,7 +50,7 @@ class ProceduralExtractor:
             messages,
         )
 
-        data = parse_json(
+        data = parse_llm_json(
             response,
         )
 
