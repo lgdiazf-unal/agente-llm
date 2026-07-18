@@ -8,14 +8,48 @@ from memory_lab.llm import call_llm
 from memory_lab.models.conversation import Conversation
 from memory_lab.models.prompt_context import PromptContext
 from memory_lab.prompt_builder import PromptBuilder
-from memory_lab.repositories.episode_repository import EpisodeRepository
-from memory_lab.services.episode_extractor import EpisodeExtractor
-from memory_lab.services.episode_manager import EpisodeManager
-from memory_lab.services.episode_retriever import EpisodeRetriever
-from memory_lab.utils.printer import print_text, print_title
-from memory_lab.views.conversation_view import show_conversation
-from memory_lab.views.episodic_memory_view import show_episodes
-from memory_lab.views.prompt_builder_view import show_prompt
+
+from memory_lab.repositories.episode_repository import (
+    EpisodeRepository,
+)
+from memory_lab.repositories.semantic_repository import (
+    SemanticRepository,
+)
+
+from memory_lab.services.episode_extractor import (
+    EpisodeExtractor,
+)
+from memory_lab.services.episode_manager import (
+    EpisodeManager,
+)
+from memory_lab.services.episode_retriever import (
+    EpisodeRetriever,
+)
+
+from memory_lab.services.semantic_extractor import (
+    SemanticExtractor,
+)
+from memory_lab.services.semantic_manager import (
+    SemanticManager,
+)
+from memory_lab.services.semantic_retriever import (
+    SemanticRetriever,
+)
+
+from memory_lab.utils.printer import (
+    print_text,
+    print_title,
+)
+
+from memory_lab.views.conversation_view import (
+    show_conversation,
+)
+from memory_lab.views.episodic_memory_view import (
+    show_episodes,
+)
+from memory_lab.views.prompt_builder_view import (
+    show_prompt,
+)
 from memory_lab.views.retrieved_episodes_view import (
     show_retrieved_episodes,
 )
@@ -29,16 +63,36 @@ class Agent:
 
         self.prompt_builder = PromptBuilder()
 
-        self.extractor = EpisodeExtractor()
+        #
+        # Episodic memory
+        #
 
-        self.repository = EpisodeRepository()
+        self.episode_repository = EpisodeRepository()
+
+        self.episode_extractor = EpisodeExtractor()
 
         self.episode_manager = EpisodeManager(
-            repository=self.repository,
+            repository=self.episode_repository,
         )
 
-        self.retriever = EpisodeRetriever(
-            repository=self.repository,
+        self.episode_retriever = EpisodeRetriever(
+            repository=self.episode_repository,
+        )
+
+        #
+        # Semantic memory
+        #
+
+        self.semantic_repository = SemanticRepository()
+
+        self.semantic_extractor = SemanticExtractor()
+
+        self.semantic_manager = SemanticManager(
+            repository=self.semantic_repository,
+        )
+
+        self.semantic_retriever = SemanticRetriever(
+            repository=self.semantic_repository,
         )
 
         self.commands = {
@@ -50,7 +104,7 @@ class Agent:
     def run(self) -> None:
 
         print_title("LLM MEMORY LAB")
-        print_text("Phase 0.7 - Episodic Memory Management")
+        print_text("Phase 0.8 - Semantic Memory")
 
         while True:
 
@@ -59,6 +113,7 @@ class Agent:
             user_input = input("Usuario: ").strip()
 
             if not user_input:
+
                 continue
 
             if user_input.lower() == "exit":
@@ -79,7 +134,9 @@ class Agent:
 
                 continue
 
-            self.handle_chat(user_input)
+            self.handle_chat(
+                user_input,
+            )
 
     def handle_chat(
         self,
@@ -94,7 +151,11 @@ class Agent:
             self.conversation,
         )
 
-        episodes = self.retriever.retrieve(
+        episodes = self.episode_retriever.retrieve(
+            self.conversation,
+        )
+
+        facts = self.semantic_retriever.retrieve(
             self.conversation,
         )
 
@@ -105,21 +166,30 @@ class Agent:
         context = PromptContext(
             conversation=self.conversation,
             episodes=episodes,
+            facts=facts,
         )
 
         messages = self.prompt_builder.build(
             context,
         )
 
-        show_prompt(messages)
+        show_prompt(
+            messages,
+        )
 
-        response = call_llm(messages)
+        response = call_llm(
+            messages,
+        )
 
         self.conversation.add_assistant_message(
             response,
         )
 
-        episode = self.extractor.extract(
+        #
+        # Episodic memory
+        #
+
+        episode = self.episode_extractor.extract(
             self.conversation,
         )
 
@@ -127,15 +197,33 @@ class Agent:
             episode,
         )
 
-        print_title("ASSISTANT")
+        #
+        # Semantic memory
+        #
 
-        print_text(response)
+        fact = self.semantic_extractor.extract(
+            self.conversation,
+        )
+
+        self.semantic_manager.process(
+            fact,
+        )
+
+        print_title(
+            "ASSISTANT",
+        )
+
+        print_text(
+            response,
+        )
 
     def memorize(self) -> None:
 
         if not self.conversation.messages:
 
-            print_title("EPISODIC MEMORY")
+            print_title(
+                "EPISODIC MEMORY",
+            )
 
             print_text(
                 "No hay conversación para memorizar.",
@@ -143,7 +231,7 @@ class Agent:
 
             return
 
-        episode = self.extractor.extract(
+        episode = self.episode_extractor.extract(
             self.conversation,
         )
 
@@ -151,21 +239,25 @@ class Agent:
             episode,
         )
 
-        print_title("EPISODIC MEMORY")
-
-        print_text(
-            "Episodio almacenado correctamente.",
+        fact = self.semantic_extractor.extract(
+            self.conversation,
         )
 
-        print()
+        self.semantic_manager.process(
+            fact,
+        )
+
+        print_title(
+            "MEMORY",
+        )
 
         print_text(
-            episode.summary,
+            "Memoria actualizada correctamente.",
         )
 
     def show_episodic_memory(self) -> None:
 
-        episodes = self.repository.load_all()
+        episodes = self.episode_repository.load_all()
 
         show_episodes(
             episodes,
@@ -173,7 +265,9 @@ class Agent:
 
     def show_help(self) -> None:
 
-        print_title("COMMANDS")
+        print_title(
+            "COMMANDS",
+        )
 
         print("exit")
         print("/memorize")
