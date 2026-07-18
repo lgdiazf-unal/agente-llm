@@ -15,12 +15,18 @@ from memory_lab.repositories.episode_repository import (
 from memory_lab.repositories.semantic_repository import (
     SemanticRepository,
 )
+from memory_lab.repositories.procedural_repository import (
+    ProceduralRepository,
+)
 
 from memory_lab.services.episode_retriever import (
     EpisodeRetriever,
 )
 from memory_lab.services.semantic_retriever import (
     SemanticRetriever,
+)
+from memory_lab.services.procedural_retriever import (
+    ProceduralRetriever,
 )
 
 
@@ -30,6 +36,7 @@ class ContextAssembler:
         self,
         episode_repository: EpisodeRepository,
         semantic_repository: SemanticRepository,
+        procedural_repository: ProceduralRepository,
     ) -> None:
 
         self.episode_retriever = EpisodeRetriever(
@@ -40,12 +47,40 @@ class ContextAssembler:
             repository=semantic_repository,
         )
 
+        self.procedural_retriever = ProceduralRetriever(
+            repository=procedural_repository,
+        )
+
     def build(
         self,
         conversation: Conversation,
     ) -> PromptContext:
 
         blocks: list[ContextBlock] = []
+
+        #
+        # Semantic Memory
+        #
+
+        facts = self.semantic_retriever.retrieve(
+            conversation,
+        )
+
+        if facts:
+
+            blocks.append(
+                ContextBlock(
+                    title="SEMANTIC MEMORY",
+                    lines=[
+                        fact.content
+                        for fact in facts
+                    ],
+                )
+            )
+
+        #
+        # Episodic Memory
+        #
 
         episodes = self.episode_retriever.retrieve(
             conversation,
@@ -63,18 +98,22 @@ class ContextAssembler:
                 )
             )
 
-        facts = self.semantic_retriever.retrieve(
+        #
+        # Procedural Memory
+        #
+
+        procedures = self.procedural_retriever.retrieve(
             conversation,
         )
 
-        if facts:
+        if procedures:
 
             blocks.append(
                 ContextBlock(
-                    title="SEMANTIC MEMORY",
+                    title="PROCEDURAL MEMORY",
                     lines=[
-                        fact.content
-                        for fact in facts
+                        procedure.content
+                        for procedure in procedures
                     ],
                 )
             )
