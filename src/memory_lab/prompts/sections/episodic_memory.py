@@ -3,18 +3,20 @@ from memory_lab.prompts.sections.base import PromptSection
 from memory_lab.prompts.sections.helpers import build_header
 
 
-class ConversationSection(PromptSection):
+class EpisodicMemorySection(PromptSection):
 
     @property
     def name(self) -> str:
-        return "Conversation"
+        return "Episodic Memory"
 
     def is_enabled(
         self,
         context: PromptContext,
     ) -> bool:
 
-        return True
+        return bool(
+            context.episodes,
+        )
 
     def build(
         self,
@@ -22,13 +24,13 @@ class ConversationSection(PromptSection):
     ) -> str:
 
         text = build_header(
-            "CURRENT CONVERSATION",
+            "EPISODIC MEMORY",
         )
 
-        for message in context.conversation.messages:
+        for episode in context.episodes:
 
-            text += f"{message.role.upper()}:\n"
+            text += f"- {episode.summary}\n"
 
-            text += f"{message.content}\n\n"
+        text += "\n"
 
         return text
