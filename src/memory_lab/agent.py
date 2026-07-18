@@ -10,6 +10,7 @@ from memory_lab.models.prompt_context import PromptContext
 from memory_lab.prompt_builder import PromptBuilder
 from memory_lab.repositories.episode_repository import EpisodeRepository
 from memory_lab.services.episode_extractor import EpisodeExtractor
+from memory_lab.services.episode_manager import EpisodeManager
 from memory_lab.services.episode_retriever import EpisodeRetriever
 from memory_lab.utils.printer import print_text, print_title
 from memory_lab.views.conversation_view import show_conversation
@@ -32,6 +33,10 @@ class Agent:
 
         self.repository = EpisodeRepository()
 
+        self.episode_manager = EpisodeManager(
+            repository=self.repository,
+        )
+
         self.retriever = EpisodeRetriever(
             repository=self.repository,
         )
@@ -45,7 +50,7 @@ class Agent:
     def run(self) -> None:
 
         print_title("LLM MEMORY LAB")
-        print_text("Phase 0.6 - Episodic Retrieval")
+        print_text("Phase 0.7 - Episodic Memory Management")
 
         while True:
 
@@ -114,6 +119,14 @@ class Agent:
             response,
         )
 
+        episode = self.extractor.extract(
+            self.conversation,
+        )
+
+        self.episode_manager.process(
+            episode,
+        )
+
         print_title("ASSISTANT")
 
         print_text(response)
@@ -134,7 +147,7 @@ class Agent:
             self.conversation,
         )
 
-        self.repository.save(
+        self.episode_manager.process(
             episode,
         )
 

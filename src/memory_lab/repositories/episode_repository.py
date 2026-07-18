@@ -1,4 +1,6 @@
 """
+episode_repository.py
+
 Repositorio encargado de almacenar episodios.
 """
 
@@ -19,21 +21,28 @@ class EpisodeRepository:
 
         self._file = Path(file_path)
 
-        self._file.parent.mkdir(parents=True, exist_ok=True)
+        self._file.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
         if not self._file.exists():
+
             self._file.write_text(
                 "[]",
                 encoding="utf-8",
             )
 
-    def load_all(self) -> list[Episode]:
+    def load_all(
+        self,
+    ) -> list[Episode]:
 
         content = self._file.read_text(
             encoding="utf-8",
         )
 
         if not content.strip():
+
             return []
 
         data = json.loads(content)
@@ -43,15 +52,59 @@ class EpisodeRepository:
             for item in data
         ]
 
-    def save(self, episode: Episode) -> None:
+    def save(
+        self,
+        episode: Episode,
+    ) -> None:
 
         episodes = self.load_all()
 
-        episodes.append(episode)
+        episodes.append(
+            episode,
+        )
+
+        self._write(
+            episodes,
+        )
+
+    def update(
+        self,
+        episode: Episode,
+    ) -> None:
+
+        episodes = self.load_all()
+
+        for index, current in enumerate(
+            episodes,
+        ):
+
+            if current.id == episode.id:
+
+                episodes[index] = episode
+
+                break
+
+        self._write(
+            episodes,
+        )
+
+    def clear(
+        self,
+    ) -> None:
+
+        self._file.write_text(
+            "[]",
+            encoding="utf-8",
+        )
+
+    def _write(
+        self,
+        episodes: list[Episode],
+    ) -> None:
 
         serialized = [
-            e.to_dict()
-            for e in episodes
+            episode.to_dict()
+            for episode in episodes
         ]
 
         self._file.write_text(
@@ -60,12 +113,5 @@ class EpisodeRepository:
                 indent=4,
                 ensure_ascii=False,
             ),
-            encoding="utf-8",
-        )
-
-    def clear(self) -> None:
-
-        self._file.write_text(
-            "[]",
             encoding="utf-8",
         )
