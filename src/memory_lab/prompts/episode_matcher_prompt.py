@@ -32,4 +32,19 @@ Si decides UPDATE:
 }
 
 No agregues explicaciones.
+No retornes ```json \n {..} solo el json nativo.
+
+ejemplo de respuesta:
+
+para crear
+{
+    "action": "create"
+}
+
+para actualizar
+{
+    "action": "update",
+    "episode_id": "<id>"
+}
+
 """.strip()

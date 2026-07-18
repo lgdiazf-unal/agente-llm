@@ -1,54 +1,54 @@
 """
-Servicio encargado de decidir si un episodio
+Servicio encargado de decidir si un conocimiento
 debe crearse o actualizar uno existente.
 """
 
 import json
 
 from memory_lab.llm import call_llm
-from memory_lab.models.episode import Episode
-from memory_lab.prompts.episode_matcher_prompt import (
+from memory_lab.models.fact import Fact
+from memory_lab.prompts.semantic_matcher_prompt import (
     SYSTEM_PROMPT,
 )
-from memory_lab.repositories.episode_repository import (
-    EpisodeRepository,
+from memory_lab.repositories.semantic_repository import (
+    SemanticRepository,
 )
 from memory_lab.utils.json_parser import (
     parse_llm_json,
 )
 
 
-class EpisodeMatcher:
+class SemanticMatcher:
 
     def __init__(
         self,
-        repository: EpisodeRepository,
+        repository: SemanticRepository,
     ) -> None:
 
         self.repository = repository
 
     def match(
         self,
-        episode: Episode,
-    ) -> Episode | None:
+        fact: Fact,
+    ) -> Fact | None:
 
-        episodes = self.repository.load_all()
+        facts = self.repository.load_all()
 
-        if not episodes:
+        if not facts:
 
             return None
 
         existing = json.dumps(
             [
                 item.to_dict()
-                for item in episodes
+                for item in facts
             ],
             indent=4,
             ensure_ascii=False,
         )
 
         candidate = json.dumps(
-            episode.to_dict(),
+            fact.to_dict(),
             indent=4,
             ensure_ascii=False,
         )
@@ -61,9 +61,9 @@ class EpisodeMatcher:
             {
                 "role": "user",
                 "content":
-                    f"Episodios existentes:\n\n"
+                    f"Existing facts:\n\n"
                     f"{existing}\n\n"
-                    f"Episodio candidato:\n\n"
+                    f"Candidate fact:\n\n"
                     f"{candidate}",
             },
         ]
@@ -80,12 +80,12 @@ class EpisodeMatcher:
 
             return None
 
-        episode_id = decision["episode_id"]
+        fact_id = decision["fact_id"]
 
-        for existing_episode in episodes:
+        for existing_fact in facts:
 
-            if existing_episode.id == episode_id:
+            if existing_fact.id == fact_id:
 
-                return existing_episode
+                return existing_fact
 
         return None

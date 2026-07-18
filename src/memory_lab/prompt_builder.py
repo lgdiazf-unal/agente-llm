@@ -38,6 +38,35 @@ class PromptBuilder:
         sections: list[str] = []
 
         #
+        # Semantic Memory
+        #
+
+        if context.facts:
+
+            sections.append(
+                "=============================="
+            )
+
+            sections.append(
+                "SEMANTIC MEMORY"
+            )
+
+            sections.append(
+                "=============================="
+            )
+
+            sections.append("")
+
+            for fact in context.facts:
+
+                sections.append(
+                    f"- {fact.content}"
+                )
+
+            sections.append("")
+            sections.append("")
+
+        #
         # Episodic Memory
         #
 
@@ -96,4 +125,6 @@ class PromptBuilder:
 
             sections.append("")
 
-        return "\n".join(sections)
+        return "\n".join(
+            sections,
+        )
