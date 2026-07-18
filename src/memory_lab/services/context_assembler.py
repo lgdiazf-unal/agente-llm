@@ -5,6 +5,7 @@ Servicio encargado de construir el PromptContext
 a partir de la conversación y las memorias.
 """
 
+from memory_lab.models.context_block import ContextBlock
 from memory_lab.models.conversation import Conversation
 from memory_lab.models.prompt_context import PromptContext
 
@@ -44,16 +45,41 @@ class ContextAssembler:
         conversation: Conversation,
     ) -> PromptContext:
 
+        blocks: list[ContextBlock] = []
+
         episodes = self.episode_retriever.retrieve(
             conversation,
         )
+
+        if episodes:
+
+            blocks.append(
+                ContextBlock(
+                    title="EPISODIC MEMORY",
+                    lines=[
+                        episode.summary
+                        for episode in episodes
+                    ],
+                )
+            )
 
         facts = self.semantic_retriever.retrieve(
             conversation,
         )
 
+        if facts:
+
+            blocks.append(
+                ContextBlock(
+                    title="SEMANTIC MEMORY",
+                    lines=[
+                        fact.content
+                        for fact in facts
+                    ],
+                )
+            )
+
         return PromptContext(
             conversation=conversation,
-            episodes=episodes,
-            facts=facts,
+            blocks=blocks,
         )
