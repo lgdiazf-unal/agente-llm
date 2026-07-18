@@ -1,328 +1,246 @@
-# Memory Lab
+# Roadmap
 
-Framework experimental para construir agentes LLM con memoria persistente.
+El proyecto sigue Versionado Semántico (SemVer).
 
-El objetivo del proyecto es implementar, de manera incremental, una arquitectura de memoria inspirada en la memoria humana, donde cada versión agrega nuevas capacidades sin modificar la arquitectura base.
+Formato:
 
----
+MAJOR.MINOR.PATCH
 
-# Estado actual
-
-Versión actual:
-
-```
-v0.8
-```
-
-Capacidades implementadas:
-
-- Conversación persistente durante la sesión.
-- Memoria episódica.
-- Memoria semántica.
-- Recuperación automática de memoria.
-- Actualización automática mediante LLM.
-- Construcción dinámica del prompt.
+- MAJOR → Cambios importantes de arquitectura o nuevas generaciones del sistema.
+- MINOR → Nuevas funcionalidades compatibles.
+- PATCH → Correcciones y mejoras sin cambios funcionales.
 
 ---
 
-# Arquitectura
+# Serie 0.x
 
-```
-                User
-                  │
-                  ▼
-            Conversation
-                  │
-                  ▼
-                Agent
-                  │
-     ┌────────────┴────────────┐
-     ▼                         ▼
-EpisodeRetriever        SemanticRetriever
-     │                         │
-     └────────────┬────────────┘
-                  ▼
-           PromptContext
-                  │
-                  ▼
-           PromptBuilder
-                  │
-                  ▼
-                 LLM
-                  │
-      ┌───────────┴────────────┐
-      ▼                        ▼
-EpisodeExtractor      SemanticExtractor
-      │                        │
-      ▼                        ▼
- EpisodeManager        SemanticManager
-      │                        │
-      ▼                        ▼
- EpisodeMatcher       SemanticMatcher
-      │                        │
-      ▼                        ▼
-EpisodeRepository   SemanticRepository
-```
+Corresponde a la etapa experimental del framework.
+
+## v0.1
+
+- Infraestructura base.
+- Cliente LLM.
+- Conversación.
+- Prompt básico.
 
 ---
 
-# Componentes
+## v0.2
 
-## Conversation
-
-Mantiene el historial completo de la conversación.
-
----
-
-## PromptBuilder
-
-Construye el prompt enviado al modelo.
-
-Actualmente incluye:
-
-- Semantic Memory
-- Episodic Memory
-- Current Conversation
+- Modelos principales.
+- Persistencia inicial.
+- Organización del proyecto.
 
 ---
 
-## Episodic Memory
+## v0.3
 
-Representa experiencias completas del agente.
-
-Cada episodio contiene:
-
-```
-Episode
-    id
-    summary
-```
-
-Flujo:
-
-```
-Conversation
-      │
-      ▼
-EpisodeExtractor
-      │
-      ▼
-Episode
-      │
-      ▼
-EpisodeManager
-      │
-      ▼
-EpisodeMatcher
-      │
-      ├── CREATE
-      └── UPDATE
-```
+- Reestructuración interna.
+- Separación por servicios.
+- Repositorios.
 
 ---
 
-## Semantic Memory
+## v0.4
 
-Representa conocimiento estable.
-
-Cada hecho contiene:
-
-```
-Fact
-    id
-    content
-```
-
-Flujo:
-
-```
-Conversation
-      │
-      ▼
-SemanticExtractor
-      │
-      ▼
-Fact
-      │
-      ▼
-SemanticManager
-      │
-      ▼
-SemanticMatcher
-      │
-      ├── CREATE
-      └── UPDATE
-```
+- Mejoras arquitectónicas.
+- Limpieza del flujo.
+- Preparación para memoria.
 
 ---
 
-# Persistencia
+## v0.5
 
-La memoria se almacena en formato JSON.
-
-```
-data/
-
-    episodes.json
-
-    facts.json
-```
+- Primer Prompt Builder.
+- Contexto de conversación.
+- Flujo completo Agent → LLM.
 
 ---
-
-# Recuperación
-
-Antes de construir el prompt el agente recupera:
-
-```
-Conversation
-      │
-      ├── EpisodeRetriever
-      │
-      └── SemanticRetriever
-```
-
-Ambos resultados son incorporados al `PromptContext`.
-
----
-
-# Prompt
-
-El prompt enviado al LLM tiene la siguiente estructura:
-
-```
-SEMANTIC MEMORY
-
-...
-
-EPISODIC MEMORY
-
-...
-
-CURRENT CONVERSATION
-
-...
-```
-
----
-
-# Gestión automática de memoria
-
-Después de cada respuesta del asistente se ejecuta automáticamente:
-
-```
-Conversation
-      │
-      ▼
-EpisodeExtractor
-      │
-      ▼
-EpisodeManager
-
-Conversation
-      │
-      ▼
-SemanticExtractor
-      │
-      ▼
-SemanticManager
-```
-
-No es necesario ejecutar comandos manuales para mantener la memoria.
-
----
-
-# Matching mediante LLM
-
-La decisión CREATE / UPDATE es realizada por el modelo.
-
-## Episodios
-
-Entrada:
-
-- Episodios existentes.
-- Episodio candidato.
-
-Salida:
-
-```json
-{
-    "action": "create"
-}
-```
-
-o
-
-```json
-{
-    "action": "update",
-    "episode_id": "<id>"
-}
-```
-
----
-
-## Hechos
-
-Entrada:
-
-- Facts existentes.
-- Fact candidato.
-
-Salida:
-
-```json
-{
-    "action": "create"
-}
-```
-
-o
-
-```json
-{
-    "action": "update",
-    "fact_id": "<id>"
-}
-```
-
----
-
-# Versiones
 
 ## v0.6
 
-- Memoria episódica.
-- Recuperación de episodios.
+### Episodic Memory
+
+Se incorpora la primera memoria persistente.
+
+Incluye:
+
+- Episode
+- EpisodeExtractor
+- EpisodeRepository
+- EpisodeRetriever
+- Recuperación automática.
 
 ---
 
 ## v0.7
 
-- CREATE / UPDATE para memoria episódica.
-- EpisodeMatcher.
-- EpisodeManager.
+### Episodic Memory Management
+
+La memoria deja de ser únicamente persistente y pasa a ser administrada.
+
+Incluye:
+
+- EpisodeManager
+- EpisodeMatcher
+- CREATE
+- UPDATE
+- Actualización automática mediante LLM.
 
 ---
 
 ## v0.8
 
-- Memoria semántica.
-- SemanticExtractor.
-- SemanticRetriever.
-- SemanticManager.
-- SemanticMatcher.
-- Persistencia de hechos.
-- Prompt con memoria episódica y semántica.
+### Semantic Memory
+
+Se incorpora un segundo sistema de memoria.
+
+Incluye:
+
+- Fact
+- SemanticExtractor
+- SemanticRepository
+- SemanticRetriever
+- SemanticManager
+- SemanticMatcher
+- CREATE / UPDATE
+- Recuperación automática.
+- Integración con PromptBuilder.
 
 ---
 
-# Próxima versión
-
 ## v0.9
+
+### Context Assembly
+
+La construcción del contexto deja de depender del Agent.
+
+Incluye:
+
+- ContextAssembler
+- ContextBlock
+- PromptContext desacoplado
+- PromptBuilder genérico
+- Arquitectura extensible para nuevos tipos de memoria.
+
+---
+
+# Serie 1.x
+
+Corresponde a la primera arquitectura completa de memoria.
+
+## v1.0
+
+### Procedural Memory
+
+Se incorpora el tercer tipo de memoria.
 
 Objetivo:
 
-Introducir un **Context Assembler** encargado de seleccionar y ensamblar el contexto antes de construir el prompt.
+Permitir que el agente aprenda procedimientos, instrucciones y secuencias de acciones reutilizables.
 
-Esto permitirá desacoplar la recuperación de memoria del `Agent` y preparar la arquitectura para incorporar nuevos tipos de memoria y estrategias de selección de contexto.
+Componentes previstos:
+
+- Procedure
+- ProceduralExtractor
+- ProceduralRepository
+- ProceduralRetriever
+- ProceduralManager
+- ProceduralMatcher
+
+Integración automática mediante ContextAssembler.
+
+---
+
+## v1.1
+
+### Context Selection
+
+Introducción del ContextSelector.
+
+Responsabilidades:
+
+- limitar tamaño del contexto
+- seleccionar recuerdos relevantes
+- controlar presupuesto de tokens
+- preparar el contexto para el PromptBuilder
+
+---
+
+## v1.2
+
+### Retrieval Strategies
+
+Nuevos mecanismos de recuperación.
+
+Ejemplos:
+
+- Top-K
+- Similaridad semántica
+- Scoring híbrido
+- Recencia
+- Frecuencia
+- Importancia
+
+---
+
+## v1.3
+
+### Memory Consolidation
+
+Optimización de la memoria.
+
+Incluye:
+
+- consolidación
+- deduplicación
+- fusión automática
+- olvido controlado
+- compresión de recuerdos
+
+---
+
+## v1.4
+
+### Memory Importance
+
+Cada recuerdo tendrá una importancia explícita.
+
+Permitirá:
+
+- priorizar recuerdos
+- proteger recuerdos importantes
+- mejorar la recuperación
+
+---
+
+## v1.5
+
+### Temporal Memory
+
+Se incorpora información temporal.
+
+Ejemplos:
+
+- última utilización
+- fecha de creación
+- frecuencia
+- historial de modificaciones
+
+---
+
+# Serie 2.x
+
+Segunda generación del framework.
+
+En esta etapa la arquitectura estará orientada a agentes autónomos.
+
+Objetivos:
+
+- planificación
+- reflexión
+- memoria jerárquica
+- aprendizaje continuo
+- herramientas
+- múltiples agentes
+- razonamiento de largo plazo
