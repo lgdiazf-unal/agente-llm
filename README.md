@@ -1,167 +1,101 @@
-# LLM Memory Lab
+# Memory Lab
 
-Proyecto educativo para comprender cómo funcionan las memorias de un agente basado en LLM.
+> Un proyecto educativo para comprender cómo funcionan las memorias de un agente basado en LLM, implementando cada componente desde cero y sin utilizar frameworks.
 
-El objetivo **no es construir un framework**, sino implementar desde cero cada uno de los componentes de un agente moderno para entender qué hace cada pieza y por qué existe.
+## Objetivo
 
-Cada fase del proyecto corresponde a un **tag de Git**, permitiendo recorrer la evolución del agente paso a paso.
+El objetivo de este proyecto es construir un agente paso a paso para entender cómo funcionan internamente las distintas memorias que utilizan los agentes modernos.
 
----
+Cada versión agrega una nueva capacidad, manteniendo el código simple y fácil de seguir.
 
-# Objetivos
-
-* Comprender cómo funciona un agente basado en LLM.
-* Implementar cada tipo de memoria desde cero.
-* Evitar frameworks para entender toda la arquitectura.
-* Visualizar cada paso del procesamiento.
-* Mantener una arquitectura limpia y fácil de extender.
+El foco no es construir el mejor agente, sino comprender su funcionamiento.
 
 ---
 
-# Tecnologías
+# Principios del proyecto
 
-* Python 3.12+
-* OpenRouter SDK
-* Ubuntu Server
-* Modelos gratuitos disponibles en OpenRouter
-
----
-
-# Filosofía del proyecto
-
-Durante todo el desarrollo seguiremos algunas reglas.
-
-## 1. Un concepto por fase
-
-Cada versión responde una única pregunta.
-
-Por ejemplo:
-
-* ¿Cómo llamar un LLM?
-* ¿Cómo construir un prompt?
-* ¿Cómo funciona la memoria de trabajo?
-* ¿Cómo se genera un episodio?
-
-Nunca mezclaremos varios conceptos nuevos en una misma fase.
+- Sin frameworks de agentes.
+- Código explícito.
+- Arquitectura incremental.
+- Cada versión es un tag de Git.
+- Todo el proceso es visible.
+- Fácil de ejecutar en una máquina Ubuntu sin GPU.
+- Uso de modelos gratuitos mediante OpenRouter.
 
 ---
 
-## 2. Cada clase tiene una única responsabilidad
+# Roadmap
 
-Ejemplo:
-
-| Clase             | Responsabilidad          |
-| ----------------- | ------------------------ |
-| Conversation      | Mantener la conversación |
-| PromptBuilder     | Construir el prompt      |
-| EpisodeExtractor  | Generar un episodio      |
-| EpisodeRepository | Persistir episodios      |
-
----
-
-## 3. El dominio no conoce la infraestructura
-
-Los modelos del dominio (`Conversation`, `Message`, `Episode`) nunca conocen:
-
-* OpenRouter
-* JSON
-* SQLite
-* Embeddings
-
-Esas responsabilidades pertenecen a otras capas.
+| Versión | Objetivo |
+|----------|----------|
+| v0.1 | Cliente LLM |
+| v0.2 | Conversación |
+| v0.3 | PromptContext |
+| v0.4 | Working Memory |
+| v0.5 | Memoria episódica |
+| v0.6 | Recuperación de episodios |
+| v0.6.1 | Refactor del PromptBuilder utilizando Prompt Sections |
+| v0.6.2 | Context Assembler |
+| v0.6.3 | Context Renderer |
+| v0.7 | Cognitive Pipeline |
+| v0.8 | Memoria semántica |
+| v0.9 | Memoria procedimental |
+| v1.0 | Agente con memorias completas |
 
 ---
 
-# Arquitectura actual
+# Arquitectura actual (v0.6.1)
 
-```text
-                Usuario
-                   │
-                   ▼
-             Conversation
-                   │
-                   ▼
-            PromptContext
-                   │
-                   ▼
-            PromptBuilder
-                   │
-                   ▼
-              messages[]
-                   │
-                   ▼
-                OpenRouter
-                   │
-                   ▼
-               Respuesta
-                   │
-                   ▼
-            Conversation
-                   │
-                   ▼
-           EpisodeExtractor
-                   │
-                   ▼
-                Episode
 ```
-
----
-
-# Estructura del proyecto
-
-```text
-memory-lab/
-│
-├── pyproject.toml
-├── README.md
-│
-├── src/
-│   └── memory_lab/
-│       │
-│       ├── models/
-│       │   ├── conversation.py
-│       │   ├── episode.py
-│       │   ├── message.py
-│       │   └── prompt_context.py
-│       │
-│       ├── prompts/
-│       │   ├── chat_prompt.py
-│       │   └── episode_prompt.py
-│       │
-│       ├── services/
-│       │   └── episode_extractor.py
-│       │
-│       ├── utils/
-│       │   ├── conversation_formatter.py
-│       │   └── printer.py
-│       │
-│       ├── views/
-│       │   ├── conversation_view.py
-│       │   └── prompt_builder_view.py
-│       │
-│       ├── llm.py
-│       ├── prompt_builder.py
-│       └── main.py
-│
-└── .env
+                    Agent
+                      │
+                      ▼
+               Working Memory
+                      │
+                      ▼
+            Episode Retriever
+                      │
+                      ▼
+              PromptContext
+                      │
+                      ▼
+              PromptBuilder
+                      │
+                      ▼
+             Prompt Sections
+                      │
+      ┌───────────────┼────────────────┐
+      ▼               ▼                ▼
+ SystemSection EpisodicMemory ConversationSection
+                      │
+                      ▼
+                   Prompt
+                      │
+                      ▼
+                 LLM Service
+                      │
+                      ▼
+                 OpenRouter
 ```
 
 ---
 
 # Flujo de ejecución
 
-Cada interacción sigue exactamente el mismo ciclo.
-
-```text
+```
 Usuario
 
 ↓
 
-Actualizar Conversation
+Working Memory
 
 ↓
 
-Construir PromptContext
+Episode Retriever
+
+↓
+
+PromptContext
 
 ↓
 
@@ -169,7 +103,7 @@ PromptBuilder
 
 ↓
 
-Enviar al LLM
+LLM
 
 ↓
 
@@ -177,149 +111,197 @@ Respuesta
 
 ↓
 
-Actualizar Conversation
+Episode Extractor
+
+↓
+
+Episode Repository
 ```
 
-Cuando el usuario ejecuta:
+---
 
-```text
-/memorize
+# Estructura del proyecto
+
+```
+src/
+└── memory_lab/
+
+    agent/
+
+    llm/
+
+    memories/
+
+    models/
+
+    prompts/
+    ├── prompt_builder.py
+    └── sections/
+        ├── base.py
+        ├── conversation.py
+        ├── episodic_memory.py
+        ├── helpers.py
+        └── system.py
+
+    repositories/
+
+    services/
+
+    views/
 ```
 
-se inicia un segundo flujo.
+---
 
-```text
+# Prompt Sections
+
+A partir de la versión **v0.6.1**, el PromptBuilder deja de construir el prompt directamente.
+
+Ahora utiliza un pipeline de secciones independientes.
+
+```
+PromptBuilder
+
+↓
+
+SystemSection
+
+↓
+
+EpisodicMemorySection
+
+↓
+
+ConversationSection
+
+↓
+
+Prompt
+```
+
+Cada sección es responsable de construir únicamente una parte del prompt.
+
+Todas implementan la misma interfaz.
+
+```python
+class PromptSection(ABC):
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        ...
+
+    @abstractmethod
+    def is_enabled(
+        self,
+        context,
+    ) -> bool:
+        ...
+
+    @abstractmethod
+    def build(
+        self,
+        context,
+    ) -> str:
+        ...
+```
+
+Esto permite agregar nuevas memorias sin modificar el PromptBuilder.
+
+Por ejemplo:
+
+```
+SystemSection
+
+↓
+
+ProceduralMemorySection
+
+↓
+
+SemanticMemorySection
+
+↓
+
+EpisodicMemorySection
+
+↓
+
+ConversationSection
+```
+
+---
+
+# Próximo paso
+
+La siguiente versión eliminará la responsabilidad del PromptBuilder de conocer las distintas memorias.
+
+Se introducirán tres nuevos componentes:
+
+```
 Conversation
 
 ↓
 
-EpisodeExtractor
+Context Assembler
 
 ↓
 
-LLM
+Agent Context
 
 ↓
 
-Episode
+Context Renderer
+
+↓
+
+Prompt Factory
+
+↓
+
+Prompt
+```
+
+Con esta arquitectura, el agente primero reconstruirá su contexto y solo después construirá el prompt.
+
+---
+
+# Requisitos
+
+- Python 3.12+
+- Ubuntu Server
+- Cuenta de OpenRouter
+- API Key de OpenRouter
+
+---
+
+# Instalación
+
+```bash
+git clone https://github.com/<usuario>/memory-lab.git
+
+cd memory-lab
+
+python -m venv .venv
+
+source .venv/bin/activate
+
+pip install -e .
 ```
 
 ---
 
-# Estado actual
+# Ejecutar
 
-## ✅ Working Memory
-
-Actualmente la memoria de trabajo corresponde a la conversación completa.
-
-Cada nuevo mensaje del usuario y del asistente se agrega a `Conversation`.
-
-Antes de cada llamada al modelo, toda la conversación se vuelve a enviar.
-
-Esto permite observar que el LLM **no recuerda por sí mismo**; es el agente quien reconstruye el contexto en cada petición.
-
----
-
-## ✅ Episode Extraction
-
-Es posible generar un episodio a partir de la conversación mediante el comando:
-
-```text
-/memorize
+```bash
+python main.py
 ```
 
-El extractor utiliza un prompt distinto al del asistente para convertir la conversación en un único recuerdo resumido.
-
-Todavía los episodios **no se almacenan**.
-
 ---
 
-# Roadmap
+# Filosofía
 
-## v0.1
+Este proyecto intenta mostrar cómo "piensa" un agente.
 
-Comunicación con un LLM.
+Cada versión mantiene el código lo más simple posible y evita ocultar la lógica detrás de frameworks.
 
----
-
-## v0.2
-
-Prompt Builder.
-
----
-
-## v0.3
-
-Working Memory.
-
----
-
-## v0.4
-
-Extracción de memoria episódica.
-
----
-
-## v0.5
-
-Persistencia de episodios.
-
----
-
-## v0.6
-
-Memoria semántica.
-
----
-
-## v0.7
-
-Recuperación semántica.
-
----
-
-## v0.8
-
-Memoria procedimental.
-
----
-
-## v0.9
-
-Administrador de memorias.
-
----
-
-## v1.0
-
-Agente completo.
-
----
-
-# Próxima fase
-
-La siguiente etapa incorporará la persistencia de episodios.
-
-El flujo será:
-
-```text
-Conversation
-
-↓
-
-EpisodeExtractor
-
-↓
-
-Episode
-
-↓
-
-EpisodeRepository
-
-↓
-
-episodes.json
-```
-
-A partir de ese momento el agente comenzará a construir una memoria de largo plazo.
+La idea es que cualquier desarrollador pueda recorrer el historial de Git y comprender cómo evoluciona un agente desde una conversación simple hasta un sistema con memoria de trabajo, memoria episódica, memoria semántica y memoria procedimental.
