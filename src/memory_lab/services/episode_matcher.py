@@ -7,8 +7,15 @@ import json
 
 from memory_lab.llm import call_llm
 from memory_lab.models.episode import Episode
-from memory_lab.prompts.episode_matcher_prompt import SYSTEM_PROMPT
-from memory_lab.repositories.episode_repository import EpisodeRepository
+from memory_lab.prompts.episode_matcher_prompt import (
+    SYSTEM_PROMPT,
+)
+from memory_lab.repositories.episode_repository import (
+    EpisodeRepository,
+)
+from memory_lab.utils.json_parser import (
+    parse_llm_json,
+)
 
 
 class EpisodeMatcher:
@@ -28,6 +35,7 @@ class EpisodeMatcher:
         episodes = self.repository.load_all()
 
         if not episodes:
+
             return None
 
         existing = json.dumps(
@@ -64,7 +72,7 @@ class EpisodeMatcher:
             messages,
         )
 
-        decision = json.loads(
+        decision = parse_llm_json(
             response,
         )
 

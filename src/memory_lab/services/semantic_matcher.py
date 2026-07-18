@@ -13,6 +13,9 @@ from memory_lab.prompts.semantic_matcher_prompt import (
 from memory_lab.repositories.semantic_repository import (
     SemanticRepository,
 )
+from memory_lab.utils.json_parser import (
+    parse_llm_json,
+)
 
 
 class SemanticMatcher:
@@ -69,7 +72,7 @@ class SemanticMatcher:
             messages,
         )
 
-        decision = json.loads(
+        decision = parse_llm_json(
             response,
         )
 
