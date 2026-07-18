@@ -1,40 +1,99 @@
+"""
+prompt_builder.py
+
+Construye el prompt que será enviado al LLM.
+"""
+
 from memory_lab.models.prompt_context import PromptContext
+from memory_lab.prompts.chat_prompt import SYSTEM_PROMPT
 
 
 class PromptBuilder:
-    """
-    Construye la conversación que será enviada al modelo.
-    """
-
-    def __init__(self) -> None:
-
-        self.system_prompt = (
-            "Eres un asistente útil y preciso."
-        )
 
     def build(
         self,
         context: PromptContext,
     ) -> list[dict]:
 
-        messages: list[dict] = []
-
-        # System Prompt
-        messages.append(
-            {
-                "role": "system",
-                "content": self.system_prompt,
-            }
+        user_prompt = self._build_user_prompt(
+            context,
         )
 
-        # Working Memory (Conversation)
-        for message in context.messages:
+        return [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT,
+            },
+            {
+                "role": "user",
+                "content": user_prompt,
+            },
+        ]
 
-            messages.append(
-                {
-                    "role": message.role,
-                    "content": message.content,
-                }
+    def _build_user_prompt(
+        self,
+        context: PromptContext,
+    ) -> str:
+
+        sections: list[str] = []
+
+        #
+        # Episodic Memory
+        #
+
+        if context.episodes:
+
+            sections.append(
+                "=============================="
             )
 
-        return messages
+            sections.append(
+                "EPISODIC MEMORY"
+            )
+
+            sections.append(
+                "=============================="
+            )
+
+            sections.append("")
+
+            for episode in context.episodes:
+
+                sections.append(
+                    f"- {episode.summary}"
+                )
+
+            sections.append("")
+            sections.append("")
+
+        #
+        # Current Conversation
+        #
+
+        sections.append(
+            "=============================="
+        )
+
+        sections.append(
+            "CURRENT CONVERSATION"
+        )
+
+        sections.append(
+            "=============================="
+        )
+
+        sections.append("")
+
+        for message in context.conversation.messages:
+
+            sections.append(
+                f"{message.role.upper()}:"
+            )
+
+            sections.append(
+                message.content
+            )
+
+            sections.append("")
+
+        return "\n".join(sections)
