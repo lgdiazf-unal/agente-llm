@@ -1,176 +1,249 @@
 # Memory Lab
 
-Proyecto educativo para comprender cómo funciona la memoria en un agente basado en LLM, implementando cada tipo de memoria desde cero, sin utilizar frameworks como LangChain o LlamaIndex.
+Framework experimental para construir agentes LLM con memoria persistente.
 
-El objetivo es visualizar todo el flujo interno del agente:
-
-- Construcción del prompt.
-- Recuperación de memoria.
-- Llamadas al LLM.
-- Actualización de memoria.
-- Evolución de la arquitectura paso a paso.
+El objetivo del proyecto es implementar, de manera incremental, una arquitectura de memoria inspirada en la memoria humana, donde cada versión agrega nuevas capacidades sin modificar la arquitectura base.
 
 ---
 
-# Objetivos
+# Estado actual
 
-- Comprender cómo funciona un agente con memoria.
-- Implementar cada componente manualmente.
-- Mantener una arquitectura simple y fácilmente extensible.
-- Visualizar completamente cada etapa del procesamiento.
+Versión actual:
 
----
-
-# Roadmap
-
-## v0.1
-
-- Cliente OpenRouter.
-- Primera llamada al LLM.
-
----
-
-## v0.2
-
-- Conversación.
-- Historial de mensajes.
-
----
-
-## v0.3
-
-- PromptBuilder.
-- Separación de responsabilidades.
-
----
-
-## v0.4
-
-- Memoria episódica manual.
-- Persistencia en JSON.
-
----
-
-## v0.5
-
-- Recuperación de memoria episódica.
-- EpisodicRetriever.
-- Inclusión de recuerdos en el prompt.
-
----
-
-## v0.6
-
-Refactorización del PromptBuilder.
-
-Se separó la construcción del prompt en bloques independientes.
-
-Componentes:
-
-- SystemBlock
-- ConversationBlock
-- EpisodicMemoryBlock
-- PromptBuilder
-
----
-
-## v0.7
-
-Gestión automática de la memoria episódica.
-
-El agente ya no depende del comando `/memorize` para almacenar recuerdos.
-
-Al finalizar cada conversación:
-
-1. Se extrae un episodio.
-2. Se analiza la memoria existente.
-3. El sistema decide si:
-   - crear un nuevo episodio (`CREATE`)
-   - actualizar un episodio existente (`UPDATE`)
-4. Se actualiza automáticamente la memoria.
-
-### Componentes incorporados
-
-- EpisodeManager
-- EpisodeMatcher
-
-### Flujo
-
-```text
-Usuario
-    │
-    ▼
-Conversation
-    │
-    ▼
-EpisodeRetriever
-    │
-    ▼
-PromptBuilder
-    │
-    ▼
-LLM
-    │
-    ▼
-Conversation
-    │
-    ▼
-EpisodeExtractor
-    │
-    ▼
-EpisodeManager
-    │
-    ▼
-EpisodeMatcher
-    │
-    ├── CREATE
-    │       │
-    │       ▼
-    │   EpisodeRepository.save()
-    │
-    └── UPDATE
-            │
-            ▼
-    EpisodeRepository.update()
+```
+v0.8
 ```
 
-### EpisodeExtractor
+Capacidades implementadas:
 
-Responsable de convertir una conversación completa en un episodio resumido utilizando el LLM.
-
-Entrada:
-
-- Conversation
-
-Salida:
-
-- Episode
+- Conversación persistente durante la sesión.
+- Memoria episódica.
+- Memoria semántica.
+- Recuperación automática de memoria.
+- Actualización automática mediante LLM.
+- Construcción dinámica del prompt.
 
 ---
 
-### EpisodeMatcher
+# Arquitectura
 
-Responsable de decidir si un episodio debe crearse o actualizar uno existente.
-
-Entrada:
-
-- Episodios existentes
-- Episodio candidato
-
-Utiliza el LLM para tomar la decisión.
+```
+                User
+                  │
+                  ▼
+            Conversation
+                  │
+                  ▼
+                Agent
+                  │
+     ┌────────────┴────────────┐
+     ▼                         ▼
+EpisodeRetriever        SemanticRetriever
+     │                         │
+     └────────────┬────────────┘
+                  ▼
+           PromptContext
+                  │
+                  ▼
+           PromptBuilder
+                  │
+                  ▼
+                 LLM
+                  │
+      ┌───────────┴────────────┐
+      ▼                        ▼
+EpisodeExtractor      SemanticExtractor
+      │                        │
+      ▼                        ▼
+ EpisodeManager        SemanticManager
+      │                        │
+      ▼                        ▼
+ EpisodeMatcher       SemanticMatcher
+      │                        │
+      ▼                        ▼
+EpisodeRepository   SemanticRepository
+```
 
 ---
 
-### Prompt del EpisodeMatcher
+# Componentes
 
-El LLM recibe:
+## Conversation
 
-- Lista de episodios existentes.
+Mantiene el historial completo de la conversación.
+
+---
+
+## PromptBuilder
+
+Construye el prompt enviado al modelo.
+
+Actualmente incluye:
+
+- Semantic Memory
+- Episodic Memory
+- Current Conversation
+
+---
+
+## Episodic Memory
+
+Representa experiencias completas del agente.
+
+Cada episodio contiene:
+
+```
+Episode
+    id
+    summary
+```
+
+Flujo:
+
+```
+Conversation
+      │
+      ▼
+EpisodeExtractor
+      │
+      ▼
+Episode
+      │
+      ▼
+EpisodeManager
+      │
+      ▼
+EpisodeMatcher
+      │
+      ├── CREATE
+      └── UPDATE
+```
+
+---
+
+## Semantic Memory
+
+Representa conocimiento estable.
+
+Cada hecho contiene:
+
+```
+Fact
+    id
+    content
+```
+
+Flujo:
+
+```
+Conversation
+      │
+      ▼
+SemanticExtractor
+      │
+      ▼
+Fact
+      │
+      ▼
+SemanticManager
+      │
+      ▼
+SemanticMatcher
+      │
+      ├── CREATE
+      └── UPDATE
+```
+
+---
+
+# Persistencia
+
+La memoria se almacena en formato JSON.
+
+```
+data/
+
+    episodes.json
+
+    facts.json
+```
+
+---
+
+# Recuperación
+
+Antes de construir el prompt el agente recupera:
+
+```
+Conversation
+      │
+      ├── EpisodeRetriever
+      │
+      └── SemanticRetriever
+```
+
+Ambos resultados son incorporados al `PromptContext`.
+
+---
+
+# Prompt
+
+El prompt enviado al LLM tiene la siguiente estructura:
+
+```
+SEMANTIC MEMORY
+
+...
+
+EPISODIC MEMORY
+
+...
+
+CURRENT CONVERSATION
+
+...
+```
+
+---
+
+# Gestión automática de memoria
+
+Después de cada respuesta del asistente se ejecuta automáticamente:
+
+```
+Conversation
+      │
+      ▼
+EpisodeExtractor
+      │
+      ▼
+EpisodeManager
+
+Conversation
+      │
+      ▼
+SemanticExtractor
+      │
+      ▼
+SemanticManager
+```
+
+No es necesario ejecutar comandos manuales para mantener la memoria.
+
+---
+
+# Matching mediante LLM
+
+La decisión CREATE / UPDATE es realizada por el modelo.
+
+## Episodios
+
+Entrada:
+
+- Episodios existentes.
 - Episodio candidato.
 
-Debe responder únicamente un JSON.
-
-CREATE
+Salida:
 
 ```json
 {
@@ -178,118 +251,78 @@ CREATE
 }
 ```
 
-UPDATE
+o
 
 ```json
 {
     "action": "update",
-    "episode_id": "<episode_id>"
+    "episode_id": "<id>"
 }
 ```
 
 ---
 
-### EpisodeManager
+## Hechos
 
-Coordina toda la gestión de memoria episódica.
+Entrada:
 
-Responsabilidades:
+- Facts existentes.
+- Fact candidato.
 
-- Invocar el EpisodeMatcher.
-- Ejecutar CREATE.
-- Ejecutar UPDATE.
+Salida:
 
----
+```json
+{
+    "action": "create"
+}
+```
 
-### EpisodeRepository
+o
 
-Ahora soporta:
-
-- load_all()
-- save()
-- update()
-- clear()
-
----
-
-# Arquitectura actual
-
-```text
-Agent
- │
- ├── Conversation
- │
- ├── PromptBuilder
- │
- ├── EpisodeRetriever
- │
- ├── EpisodeExtractor
- │
- ├── EpisodeManager
- │      │
- │      ▼
- │  EpisodeMatcher
- │
- └── EpisodeRepository
+```json
+{
+    "action": "update",
+    "fact_id": "<id>"
+}
 ```
 
 ---
 
-# Estructura del proyecto
+# Versiones
 
-```text
-memory_lab/
+## v0.6
 
-├── agent.py
-├── llm.py
-├── prompt_builder.py
-│
-├── models/
-│   ├── conversation.py
-│   ├── episode.py
-│   └── prompt_context.py
-│
-├── prompts/
-│   ├── episode_prompt.py
-│   └── episode_matcher_prompt.py
-│
-├── repositories/
-│   └── episode_repository.py
-│
-├── services/
-│   ├── episode_extractor.py
-│   ├── episode_manager.py
-│   ├── episode_matcher.py
-│   └── episode_retriever.py
-│
-├── views/
-│
-├── utils/
-│
-└── data/
-    └── episodes.json
-```
-
----
-
-# Estado actual
-
-Actualmente el laboratorio implementa:
-
-- Conversación.
-- Prompt Builder.
 - Memoria episódica.
 - Recuperación de episodios.
-- Extracción automática de episodios.
-- Gestión automática de episodios.
-- Decisión CREATE / UPDATE mediante LLM.
+
+---
+
+## v0.7
+
+- CREATE / UPDATE para memoria episódica.
+- EpisodeMatcher.
+- EpisodeManager.
+
+---
+
+## v0.8
+
+- Memoria semántica.
+- SemanticExtractor.
+- SemanticRetriever.
+- SemanticManager.
+- SemanticMatcher.
+- Persistencia de hechos.
+- Prompt con memoria episódica y semántica.
 
 ---
 
 # Próxima versión
 
-## v0.8
+## v0.9
 
-Memoria semántica.
+Objetivo:
 
-Se incorporará una segunda memoria permanente que almacenará conocimiento consolidado derivado de múltiples episodios, manteniendo separadas la memoria episódica y la memoria semántica.
+Introducir un **Context Assembler** encargado de seleccionar y ensamblar el contexto antes de construir el prompt.
+
+Esto permitirá desacoplar la recuperación de memoria del `Agent` y preparar la arquitectura para incorporar nuevos tipos de memoria y estrategias de selección de contexto.
