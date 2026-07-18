@@ -15,10 +15,6 @@ class PromptBuilder:
         context: PromptContext,
     ) -> list[dict]:
 
-        user_prompt = self._build_user_prompt(
-            context,
-        )
-
         return [
             {
                 "role": "system",
@@ -26,7 +22,9 @@ class PromptBuilder:
             },
             {
                 "role": "user",
-                "content": user_prompt,
+                "content": self._build_user_prompt(
+                    context,
+                ),
             },
         ]
 
@@ -38,17 +36,17 @@ class PromptBuilder:
         sections: list[str] = []
 
         #
-        # Semantic Memory
+        # Context Blocks
         #
 
-        if context.facts:
+        for block in context.blocks:
 
             sections.append(
                 "=============================="
             )
 
             sections.append(
-                "SEMANTIC MEMORY"
+                block.title
             )
 
             sections.append(
@@ -57,39 +55,10 @@ class PromptBuilder:
 
             sections.append("")
 
-            for fact in context.facts:
+            for line in block.lines:
 
                 sections.append(
-                    f"- {fact.content}"
-                )
-
-            sections.append("")
-            sections.append("")
-
-        #
-        # Episodic Memory
-        #
-
-        if context.episodes:
-
-            sections.append(
-                "=============================="
-            )
-
-            sections.append(
-                "EPISODIC MEMORY"
-            )
-
-            sections.append(
-                "=============================="
-            )
-
-            sections.append("")
-
-            for episode in context.episodes:
-
-                sections.append(
-                    f"- {episode.summary}"
+                    f"- {line}"
                 )
 
             sections.append("")
