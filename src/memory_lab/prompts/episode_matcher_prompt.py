@@ -32,4 +32,5 @@ Si decides UPDATE:
 }
 
 No agregues explicaciones.
+No retornes ```json \n {..} solo el json nativo
 """.strip()
