@@ -32,6 +32,6 @@ class EpisodeExtractor:
 
         response = call_llm(messages)
 
-        return Episode(
-            summary=response.strip(),
+        return Episode.create(
+            summary=response,
         )
