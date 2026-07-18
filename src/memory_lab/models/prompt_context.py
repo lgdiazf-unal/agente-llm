@@ -1,19 +1,23 @@
-"""
-prompt_context.py
-
-Contiene el estado necesario para construir el prompt que será enviado
-al modelo.
-
-En esta primera versión, únicamente contiene el mensaje del usuario.
-"""
-
 from dataclasses import dataclass
 
+from memory_lab.models.conversation import Conversation
+from memory_lab.models.message import Message
 
-@dataclass(slots=True)
+
+@dataclass(slots=True, frozen=True)
 class PromptContext:
     """
-    Contexto utilizado por PromptBuilder para construir el prompt.
+    Estado del agente utilizado para construir el prompt.
     """
 
-    user_message: str
+    conversation: Conversation
+
+    @property
+    def messages(self) -> list[Message]:
+        """
+        Devuelve los mensajes de la conversación.
+
+        El PromptBuilder no necesita conocer cómo están
+        almacenados internamente.
+        """
+        return self.conversation.messages
