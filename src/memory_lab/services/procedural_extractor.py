@@ -54,7 +54,7 @@ class ProceduralExtractor:
             response,
         )
 
-        if data["action"] == "none":
+        if data.get("action") == "none":
 
             return None
 
