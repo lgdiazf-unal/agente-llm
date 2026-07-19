@@ -3,12 +3,13 @@ agent.py
 
 Orquesta el ciclo principal del agente.
 
-v1.1.0
+v1.2.0
 - Terminal Interface
 - Pipeline visual
 - Context Blocks
 - Unified Memory View
 - Session Dashboard
+- Memory Quality Layer
 """
 
 from memory_lab.llm import call_llm
@@ -32,7 +33,6 @@ from memory_lab.prompt_builder import (
 )
 
 
-
 #
 # Repositories
 #
@@ -48,7 +48,6 @@ from memory_lab.repositories.semantic_repository import (
 from memory_lab.repositories.procedural_repository import (
     ProceduralRepository,
 )
-
 
 
 #
@@ -94,6 +93,25 @@ from memory_lab.services.procedural_retriever import (
 )
 
 
+#
+# Memory Quality Layer
+#
+
+from memory_lab.services.memory_access_tracker import (
+    MemoryAccessTracker,
+)
+
+from memory_lab.services.memory_decay_service import (
+    MemoryDecayService,
+)
+
+from memory_lab.services.memory_ranker import (
+    MemoryRanker,
+)
+
+from memory_lab.services.memory_selector import (
+    MemorySelector,
+)
 
 #
 # Views
@@ -120,7 +138,6 @@ from memory_lab.views.session_stats_view import (
 )
 
 
-
 #
 # Utils
 #
@@ -138,21 +155,19 @@ from memory_lab.utils.session_stats import (
 )
 
 
-
 class Agent:
 
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+    ) -> None:
 
 
         self.conversation = Conversation()
 
-
         self.prompt_builder = PromptBuilder()
 
-
         self.stats = SessionStats()
-
 
 
         #
@@ -161,19 +176,15 @@ class Agent:
 
         self.episode_repository = EpisodeRepository()
 
-
         self.episode_extractor = EpisodeExtractor()
-
 
         self.episode_manager = EpisodeManager(
             repository=self.episode_repository,
         )
 
-
         self.episode_retriever = EpisodeRetriever(
             repository=self.episode_repository,
         )
-
 
 
         #
@@ -182,19 +193,15 @@ class Agent:
 
         self.semantic_repository = SemanticRepository()
 
-
         self.semantic_extractor = SemanticExtractor()
-
 
         self.semantic_manager = SemanticManager(
             repository=self.semantic_repository,
         )
 
-
         self.semantic_retriever = SemanticRetriever(
             repository=self.semantic_repository,
         )
-
 
 
         #
@@ -203,19 +210,40 @@ class Agent:
 
         self.procedural_repository = ProceduralRepository()
 
-
         self.procedural_extractor = ProceduralExtractor()
-
 
         self.procedural_manager = ProceduralManager(
             repository=self.procedural_repository,
         )
 
-
         self.procedural_retriever = ProceduralRetriever(
             repository=self.procedural_repository,
         )
 
+
+        #
+        # Memory Quality Layer
+        #
+
+        self.memory_access_tracker = (
+            MemoryAccessTracker()
+        )
+
+        self.memory_decay_service = (
+            MemoryDecayService()
+        )
+
+        self.memory_ranker = (
+            MemoryRanker()
+        )
+
+        self.memory_selector = (
+            MemorySelector(
+                episodic_limit=5,
+                semantic_limit=5,
+                procedural_limit=5,
+            )
+        )
 
 
         #
@@ -239,12 +267,13 @@ class Agent:
         }
 
 
+    def run(
+        self,
+    ) -> None:
 
-    def run(self) -> None:
-        
 
         Console.title(
-            "LLM MEMORY LAB v1.1.0",
+            "LLM MEMORY LAB v1.2.0",
         )
 
 
@@ -255,9 +284,8 @@ class Agent:
 
 
             user_input = input(
-                "Usuario: "
+                "Usuario: ",
             ).strip()
-
 
 
             if not user_input:
@@ -265,16 +293,13 @@ class Agent:
                 continue
 
 
-
             if user_input.lower() == "exit":
-
 
                 Console.success(
                     "Hasta luego 👋",
                 )
 
                 break
-
 
 
             command = self.commands.get(
@@ -289,13 +314,9 @@ class Agent:
                 continue
 
 
-
             self.handle_chat(
                 user_input,
             )
-
-
-    
     def handle_chat(
         self,
         user_message: str,
@@ -306,9 +327,10 @@ class Agent:
 
 
         self.stats.messages = (
-            len(self.conversation.messages)
-            +
-            1
+            len(
+                self.conversation.messages,
+            )
+            + 1
         )
 
 
@@ -332,7 +354,6 @@ class Agent:
         )
 
 
-
         #
         # Retrieve Memory
         #
@@ -352,12 +373,6 @@ class Agent:
         )
 
 
-        self.stats.episodic_retrieved = len(
-            episodes,
-        )
-
-
-
         Pipeline.step(
             "Retrieving semantic memory",
         )
@@ -366,12 +381,6 @@ class Agent:
         facts = self.semantic_retriever.retrieve(
             self.conversation,
         )
-
-
-        self.stats.semantic_retrieved = len(
-            facts,
-        )
-
 
 
         Pipeline.step(
@@ -383,6 +392,82 @@ class Agent:
             self.conversation,
         )
 
+
+        #
+        # Memory Quality Layer
+        #
+
+        for episode in episodes:
+
+            self.memory_access_tracker.track(
+                episode,
+                self.episode_repository,
+            )
+
+        for fact in facts:
+
+            self.memory_access_tracker.track(
+                fact,
+                self.semantic_repository,
+            )
+
+        for procedure in procedures:
+
+            self.memory_access_tracker.track(
+                procedure,
+                self.procedural_repository,
+            )
+
+
+        self.memory_decay_service.apply(
+            episodes,
+            self.episode_repository,
+        )
+
+        self.memory_decay_service.apply(
+            facts,
+            self.semantic_repository,
+        )
+
+        self.memory_decay_service.apply(
+            procedures,
+            self.procedural_repository,
+        )
+
+
+        episodes = self.memory_ranker.rank(
+            episodes,
+        )
+
+        facts = self.memory_ranker.rank(
+            facts,
+        )
+
+        procedures = self.memory_ranker.rank(
+            procedures,
+        )
+
+
+        episodes = self.memory_selector.select_episodes(
+            episodes,
+        )
+
+        facts = self.memory_selector.select_facts(
+            facts,
+        )
+
+        procedures = self.memory_selector.select_procedures(
+            procedures,
+        )
+
+
+        self.stats.episodic_retrieved = len(
+            episodes,
+        )
+
+        self.stats.semantic_retrieved = len(
+            facts,
+        )
 
         self.stats.procedural_retrieved = len(
             procedures,
@@ -396,7 +481,6 @@ class Agent:
         )
 
 
-
         show_retrieved_memory(
             episodes=episodes,
             facts=facts,
@@ -404,9 +488,8 @@ class Agent:
         )
 
 
-
         #
-        # Build Context Blocks
+        # Context Blocks
         #
 
         self.stats.start_timer(
@@ -417,54 +500,67 @@ class Agent:
         blocks: list[ContextBlock] = []
 
 
-
         if facts:
 
             blocks.append(
+
                 ContextBlock(
+
                     title="🧠 SEMANTIC MEMORY",
+
                     lines=[
                         fact.content
                         for fact in facts
                     ],
-                )
-            )
 
+                )
+
+            )
 
 
         if episodes:
 
             blocks.append(
+
                 ContextBlock(
+
                     title="📖 EPISODIC MEMORY",
+
                     lines=[
                         episode.summary
                         for episode in episodes
                     ],
-                )
-            )
 
+                )
+
+            )
 
 
         if procedures:
 
             blocks.append(
+
                 ContextBlock(
+
                     title="⚙ PROCEDURAL MEMORY",
+
                     lines=[
                         procedure.content
                         for procedure in procedures
                     ],
+
                 )
+
             )
 
 
-
         context = PromptContext(
-            conversation=self.conversation,
-            blocks=blocks,
-        )
 
+            conversation=self.conversation,
+
+            blocks=blocks,
+
+        )
 
 
         Pipeline.step(
@@ -484,11 +580,9 @@ class Agent:
         )
 
 
-
         show_prompt(
             messages,
         )
-
 
 
         #
@@ -517,11 +611,9 @@ class Agent:
         )
 
 
-
         self.conversation.add_assistant_message(
             response,
         )
-
 
 
         #
@@ -548,7 +640,6 @@ class Agent:
         )
 
 
-
         Pipeline.step(
             "Extracting semantic memory",
         )
@@ -562,7 +653,6 @@ class Agent:
         self.semantic_manager.process(
             fact,
         )
-
 
 
         Pipeline.step(
@@ -587,11 +677,9 @@ class Agent:
         )
 
 
-
         Pipeline.finish(
             "Processing completed",
         )
-
 
 
         Console.title(
@@ -604,26 +692,23 @@ class Agent:
         )
 
 
-
         show_session_stats(
             self.stats,
         )
 
 
-
-    def memorize(self) -> None:
+    def memorize(
+        self,
+    ) -> None:
 
 
         if not self.conversation.messages:
-
 
             Console.warning(
                 "No hay conversación para memorizar.",
             )
 
-
             return
-
 
 
         Pipeline.start(
@@ -631,44 +716,36 @@ class Agent:
         )
 
 
-
         episode = self.episode_extractor.extract(
             self.conversation,
         )
-
 
         self.episode_manager.process(
             episode,
         )
 
 
-
         fact = self.semantic_extractor.extract(
             self.conversation,
         )
-
 
         self.semantic_manager.process(
             fact,
         )
 
 
-
         procedure = self.procedural_extractor.extract(
             self.conversation,
         )
-
 
         self.procedural_manager.process(
             procedure,
         )
 
 
-
         Console.success(
             "Memoria actualizada correctamente.",
         )
-
 
 
     def show_episodic_memory(
@@ -684,7 +761,6 @@ class Agent:
         )
 
 
-
     def show_stats(
         self,
     ) -> None:
@@ -693,7 +769,6 @@ class Agent:
         show_session_stats(
             self.stats,
         )
-
 
 
     def show_help(
@@ -710,21 +785,17 @@ class Agent:
             "exit",
         )
 
-
         Console.text(
             "/memorize",
         )
-
 
         Console.text(
             "/episodes",
         )
 
-
         Console.text(
             "/stats",
         )
-
 
         Console.text(
             "/help",
