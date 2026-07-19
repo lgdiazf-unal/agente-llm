@@ -6,10 +6,12 @@ Orquesta el ciclo principal del agente.
 v1.1.0
 - Terminal Interface
 - Pipeline visual
+- Context Blocks
 - Unified Memory View
 """
 
 from memory_lab.llm import call_llm
+
 
 from memory_lab.models.conversation import (
     Conversation,
@@ -18,6 +20,11 @@ from memory_lab.models.conversation import (
 from memory_lab.models.prompt_context import (
     PromptContext,
 )
+
+from memory_lab.models.context_block import (
+    ContextBlock,
+)
+
 
 from memory_lab.prompt_builder import (
     PromptBuilder,
@@ -41,6 +48,7 @@ from memory_lab.repositories.procedural_repository import (
 )
 
 
+
 #
 # Services
 #
@@ -58,6 +66,7 @@ from memory_lab.services.episode_retriever import (
 )
 
 
+
 from memory_lab.services.semantic_extractor import (
     SemanticExtractor,
 )
@@ -71,6 +80,7 @@ from memory_lab.services.semantic_retriever import (
 )
 
 
+
 from memory_lab.services.procedural_extractor import (
     ProceduralExtractor,
 )
@@ -82,6 +92,7 @@ from memory_lab.services.procedural_manager import (
 from memory_lab.services.procedural_retriever import (
     ProceduralRetriever,
 )
+
 
 
 #
@@ -103,6 +114,7 @@ from memory_lab.views.prompt_builder_view import (
 from memory_lab.views.retrieved_memory_view import (
     show_retrieved_memory,
 )
+
 
 
 #
@@ -256,7 +268,6 @@ class Agent:
             )
 
 
-
             if command:
 
                 command()
@@ -277,9 +288,6 @@ class Agent:
     ) -> None:
 
 
-        #
-        # Conversation
-        #
 
         self.conversation.add_user_message(
             user_message,
@@ -294,7 +302,6 @@ class Agent:
         Pipeline.step(
             user_message,
         )
-
 
 
         show_conversation(
@@ -349,22 +356,68 @@ class Agent:
 
 
         #
-        # Build Context
+        # Build Context Blocks
         #
+
+        blocks: list[ContextBlock] = []
+
+
+
+        if facts:
+
+            blocks.append(
+                ContextBlock(
+                    title="🧠 SEMANTIC MEMORY",
+                    lines=[
+                        fact.content
+                        for fact in facts
+                    ],
+                )
+            )
+
+
+
+        if episodes:
+
+            blocks.append(
+                ContextBlock(
+                    title="📖 EPISODIC MEMORY",
+                    lines=[
+                        episode.summary
+                        for episode in episodes
+                    ],
+                )
+            )
+
+
+
+        if procedures:
+
+            blocks.append(
+                ContextBlock(
+                    title="⚙ PROCEDURAL MEMORY",
+                    lines=[
+                        procedure.content
+                        for procedure in procedures
+                    ],
+                )
+            )
+
+
 
         context = PromptContext(
 
             conversation=self.conversation,
 
-            episodes=episodes,
-
-            facts=facts,
-
-            procedures=procedures,
+            blocks=blocks,
 
         )
 
 
+
+        #
+        # Prompt
+        #
 
         Pipeline.step(
             "Building prompt",
@@ -374,7 +427,6 @@ class Agent:
         messages = self.prompt_builder.build(
             context,
         )
-
 
 
         show_prompt(
@@ -395,7 +447,6 @@ class Agent:
         response = call_llm(
             messages,
         )
-
 
 
         self.conversation.add_assistant_message(
@@ -483,6 +534,7 @@ class Agent:
             Console.warning(
                 "No hay conversación para memorizar.",
             )
+
 
             return
 
