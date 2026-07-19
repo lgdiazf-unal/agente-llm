@@ -3,14 +3,18 @@ Servicio encargado de decidir si un procedimiento
 debe crearse o actualizarse.
 """
 
-import json
-
 from memory_lab.llm import call_llm
 
-from memory_lab.models.procedure import Procedure
+from memory_lab.models.procedure import (
+    Procedure,
+)
 
 from memory_lab.prompts.procedural_matcher_prompt import (
     SYSTEM_PROMPT,
+)
+
+from memory_lab.utils.json_parser import (
+    parse_llm_json,
 )
 
 from memory_lab.utils.procedure_formatter import (
@@ -55,6 +59,6 @@ CANDIDATE PROCEDURE
             ]
         )
 
-        return json.loads(
+        return parse_llm_json(
             response,
         )
