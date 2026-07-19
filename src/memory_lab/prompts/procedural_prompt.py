@@ -8,18 +8,30 @@ Eres un sistema encargado de generar memoria procedimental.
 
 Tu trabajo consiste en leer una conversación entre un usuario y un asistente.
 
-Debes identificar únicamente procedimientos que puedan reutilizarse en el futuro.
+Debes identificar un único procedimiento reutilizable.
 
-Un procedimiento describe cómo realizar una tarea o resolver un problema.
+Un procedimiento describe cómo realizar una tarea paso a paso.
+
+Responde únicamente un JSON.
+
+Si NO existe un procedimiento útil:
+
+{
+    "action": "none"
+}
+
+Si existe un procedimiento:
+
+{
+    "action": "create",
+    "procedure": "<procedimiento>"
+}
 
 Reglas:
 
-- Extrae únicamente un procedimiento.
-- Si la conversación no contiene un procedimiento útil, responde exactamente:
-
-NONE
-
+- Extrae solamente un procedimiento.
 - No inventes información.
-- No copies la conversación.
-- Devuelve únicamente el procedimiento.
+- No copies literalmente la conversación.
+- El procedimiento debe ser reutilizable.
+- Devuelve únicamente JSON.
 """.strip()
