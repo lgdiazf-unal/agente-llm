@@ -1,246 +1,502 @@
+# LLM Memory Lab
+
+Framework experimental para construir un agente LLM con memoria persistente modular.
+
+El proyecto implementa diferentes tipos de memoria de largo plazo y las integra automáticamente dentro del contexto enviado al modelo de lenguaje.
+
+---
+
+# Versión
+
+## v1.0.0 — Procedural Memory
+
+Estado actual:
+
+- ✅ Episodic Memory
+- ✅ Semantic Memory
+- ✅ Procedural Memory
+- ✅ Context Assembly modular
+- ✅ Persistencia en JSON
+- ✅ CREATE / UPDATE mediante LLM
+
+---
+
+# Objetivo
+
+LLM Memory Lab busca construir un agente con memoria persistente, donde cada tipo de memoria tenga una responsabilidad claramente definida y pueda evolucionar de forma independiente.
+
+Actualmente el agente dispone de tres sistemas de memoria de largo plazo.
+
+---
+
+# Tipos de memoria
+
+## Episodic Memory
+
+Representa experiencias.
+
+Responde la pregunta:
+
+> ¿Qué ocurrió?
+
+Ejemplo:
+
+```
+El usuario implementó un sistema de memoria para agentes LLM.
+```
+
+---
+
+## Semantic Memory
+
+Representa conocimiento.
+
+Responde la pregunta:
+
+> ¿Qué sabe el agente?
+
+Ejemplo:
+
+```
+El usuario desarrolla aplicaciones en Python.
+```
+
+---
+
+## Procedural Memory
+
+Representa procedimientos.
+
+Responde la pregunta:
+
+> ¿Cómo realizar una tarea?
+
+Ejemplo:
+
+```
+Cómo crear un nuevo tipo de memoria.
+
+1. Crear el modelo.
+2. Crear el repositorio.
+3. Crear el extractor.
+4. Crear el matcher.
+5. Crear el manager.
+6. Crear el retriever.
+7. Integrarlo al ContextAssembler.
+8. Integrarlo al Agent.
+```
+
+---
+
+# Arquitectura
+
+Cada tipo de memoria implementa exactamente el mismo patrón.
+
+```
+Memory
+
+    ├── Model
+    │
+    ├── Extractor
+    │
+    ├── Matcher
+    │
+    ├── Manager
+    │
+    ├── Repository
+    │
+    └── Retriever
+```
+
+Esto permite agregar nuevos tipos de memoria sin modificar la arquitectura existente.
+
+---
+
+# Flujo general
+
+```
+                Usuario
+                    │
+                    ▼
+
+             Conversation
+
+                    │
+                    ▼
+
+          ContextAssembler
+
+                    │
+     ┌──────────────┼──────────────┐
+     │              │              │
+     ▼              ▼              ▼
+
+ Episodic      Semantic      Procedural
+ Retriever     Retriever      Retriever
+
+     │              │              │
+     └──────────────┼──────────────┘
+                    │
+                    ▼
+
+            PromptContext
+
+                    │
+                    ▼
+
+            PromptBuilder
+
+                    │
+                    ▼
+
+                  LLM
+
+                    │
+                    ▼
+
+          Assistant Response
+
+                    │
+                    ▼
+
+       Memory Extraction
+
+     ┌──────────────┼──────────────┐
+     │              │              │
+     ▼              ▼              ▼
+
+ Episode      Semantic      Procedure
+ Extractor     Extractor     Extractor
+
+     │              │              │
+     ▼              ▼              ▼
+
+ Episode      Semantic      Procedural
+ Manager       Manager        Manager
+
+     │              │              │
+     ▼              ▼              ▼
+
+ Episode      Semantic      Procedural
+ Repository    Repository    Repository
+```
+
+---
+
+# Componentes implementados
+
+## Episodic Memory
+
+```
+Episode
+EpisodeExtractor
+EpisodeMatcher
+EpisodeManager
+EpisodeRepository
+EpisodeRetriever
+```
+
+---
+
+## Semantic Memory
+
+```
+Fact
+SemanticExtractor
+SemanticMatcher
+SemanticManager
+SemanticRepository
+SemanticRetriever
+```
+
+---
+
+## Procedural Memory
+
+```
+Procedure
+ProceduralExtractor
+ProceduralMatcher
+ProceduralManager
+ProceduralRepository
+ProceduralRetriever
+```
+
+---
+
+# Persistencia
+
+Cada memoria utiliza un archivo independiente.
+
+```
+data/
+
+episodes.json
+
+semantic_memory.json
+
+procedures.json
+```
+
+---
+
+# Gestión de memoria
+
+Cada manager sigue el mismo flujo.
+
+```
+Candidate Memory
+        │
+        ▼
+
+Matcher (LLM)
+
+        │
+
+ ┌──────┴──────┐
+
+CREATE      UPDATE
+
+ │             │
+
+ ▼             ▼
+
+save()     update()
+```
+
+El LLM decide si el nuevo elemento representa una memoria completamente nueva o una actualización de una memoria existente.
+
+---
+
+# Recuperación de memoria
+
+Antes de enviar un prompt al LLM, el agente recupera información desde las memorias persistentes.
+
+Actualmente:
+
+- EpisodicRetriever
+- SemanticRetriever
+- ProceduralRetriever
+
+La primera implementación recupera todos los elementos almacenados.
+
+En versiones posteriores se implementará recuperación por relevancia.
+
+---
+
+# ContextAssembler
+
+El ContextAssembler centraliza la construcción del contexto.
+
+Genera automáticamente bloques como:
+
+```
+==============================
+
+SEMANTIC MEMORY
+
+==============================
+
+- ...
+
+==============================
+
+EPISODIC MEMORY
+
+==============================
+
+- ...
+
+==============================
+
+PROCEDURAL MEMORY
+
+==============================
+
+- ...
+```
+
+Posteriormente estos bloques son enviados al PromptBuilder.
+
+---
+
+# PromptBuilder
+
+El PromptBuilder únicamente transforma un PromptContext en mensajes compatibles con el modelo.
+
+No conoce ningún tipo específico de memoria.
+
+Esto permite incorporar nuevas memorias sin modificar el PromptBuilder.
+
+---
+
+# JSON Parser
+
+Todas las respuestas estructuradas del LLM son procesadas mediante:
+
+```
+utils/json_parser.py
+```
+
+Su responsabilidad es:
+
+- eliminar bloques ```json
+- extraer el JSON
+- convertirlo a objetos Python
+
+Actualmente es utilizado por:
+
+- Extractors
+- Matchers
+
+---
+
+# Comandos disponibles
+
+## exit
+
+Finaliza la aplicación.
+
+---
+
+## /memorize
+
+Fuerza la extracción y almacenamiento de memoria.
+
+---
+
+## /episodes
+
+Muestra la memoria episódica almacenada.
+
+---
+
+## /help
+
+Lista los comandos disponibles.
+
+---
+
+# Estructura del proyecto
+
+```
+src/
+└── memory_lab/
+
+    ├── agent.py
+
+    ├── models/
+    │
+    │   ├── conversation.py
+    │   ├── context_block.py
+    │   ├── episode.py
+    │   ├── fact.py
+    │   ├── procedure.py
+    │   └── prompt_context.py
+
+    ├── repositories/
+    │
+    │   ├── episode_repository.py
+    │   ├── semantic_repository.py
+    │   └── procedural_repository.py
+
+    ├── services/
+    │
+    │   ├── context_assembler.py
+    │   │
+    │   ├── episode_extractor.py
+    │   ├── episode_matcher.py
+    │   ├── episode_manager.py
+    │   ├── episode_retriever.py
+    │   │
+    │   ├── semantic_extractor.py
+    │   ├── semantic_matcher.py
+    │   ├── semantic_manager.py
+    │   ├── semantic_retriever.py
+    │   │
+    │   ├── procedural_extractor.py
+    │   ├── procedural_matcher.py
+    │   ├── procedural_manager.py
+    │   └── procedural_retriever.py
+
+    ├── prompts/
+    │
+    │   ├── chat_prompt.py
+    │   ├── episode_prompt.py
+    │   ├── semantic_prompt.py
+    │   ├── procedural_prompt.py
+    │   └── procedural_matcher_prompt.py
+
+    ├── utils/
+    │
+    │   ├── conversation_formatter.py
+    │   ├── episode_formatter.py
+    │   ├── procedure_formatter.py
+    │   ├── semantic_formatter.py
+    │   ├── json_parser.py
+    │   └── printer.py
+
+    ├── views/
+
+    └── llm.py
+```
+
+---
+
+# Principios del proyecto
+
+- Arquitectura modular.
+- Cada memoria es independiente.
+- Persistencia transparente mediante JSON.
+- Cambios incrementales por versión.
+- El LLM toma las decisiones cognitivas.
+- Python controla la ejecución y la persistencia.
+- El PromptBuilder permanece desacoplado de los tipos de memoria.
+
+---
+
 # Roadmap
 
-El proyecto sigue Versionado Semántico (SemVer).
+## v1.1.0
 
-Formato:
-
-MAJOR.MINOR.PATCH
-
-- MAJOR → Cambios importantes de arquitectura o nuevas generaciones del sistema.
-- MINOR → Nuevas funcionalidades compatibles.
-- PATCH → Correcciones y mejoras sin cambios funcionales.
-
----
-
-# Serie 0.x
-
-Corresponde a la etapa experimental del framework.
-
-## v0.1
-
-- Infraestructura base.
-- Cliente LLM.
-- Conversación.
-- Prompt básico.
-
----
-
-## v0.2
-
-- Modelos principales.
-- Persistencia inicial.
-- Organización del proyecto.
-
----
-
-## v0.3
-
-- Reestructuración interna.
-- Separación por servicios.
-- Repositorios.
-
----
-
-## v0.4
-
-- Mejoras arquitectónicas.
-- Limpieza del flujo.
-- Preparación para memoria.
-
----
-
-## v0.5
-
-- Primer Prompt Builder.
-- Contexto de conversación.
-- Flujo completo Agent → LLM.
-
----
-
-## v0.6
-
-### Episodic Memory
-
-Se incorpora la primera memoria persistente.
-
-Incluye:
-
-- Episode
-- EpisodeExtractor
-- EpisodeRepository
-- EpisodeRetriever
-- Recuperación automática.
-
----
-
-## v0.7
-
-### Episodic Memory Management
-
-La memoria deja de ser únicamente persistente y pasa a ser administrada.
-
-Incluye:
-
-- EpisodeManager
-- EpisodeMatcher
-- CREATE
-- UPDATE
-- Actualización automática mediante LLM.
-
----
-
-## v0.8
-
-### Semantic Memory
-
-Se incorpora un segundo sistema de memoria.
-
-Incluye:
-
-- Fact
-- SemanticExtractor
-- SemanticRepository
-- SemanticRetriever
-- SemanticManager
-- SemanticMatcher
-- CREATE / UPDATE
-- Recuperación automática.
-- Integración con PromptBuilder.
-
----
-
-## v0.9
-
-### Context Assembly
-
-La construcción del contexto deja de depender del Agent.
-
-Incluye:
-
-- ContextAssembler
-- ContextBlock
-- PromptContext desacoplado
-- PromptBuilder genérico
-- Arquitectura extensible para nuevos tipos de memoria.
-
----
-
-# Serie 1.x
-
-Corresponde a la primera arquitectura completa de memoria.
-
-## v1.0
-
-### Procedural Memory
-
-Se incorpora el tercer tipo de memoria.
+Terminal UI
 
 Objetivo:
 
-Permitir que el agente aprenda procedimientos, instrucciones y secuencias de acciones reutilizables.
-
-Componentes previstos:
-
-- Procedure
-- ProceduralExtractor
-- ProceduralRepository
-- ProceduralRetriever
-- ProceduralManager
-- ProceduralMatcher
-
-Integración automática mediante ContextAssembler.
-
----
-
-## v1.1
-
-### Context Selection
-
-Introducción del ContextSelector.
-
-Responsabilidades:
-
-- limitar tamaño del contexto
-- seleccionar recuerdos relevantes
-- controlar presupuesto de tokens
-- preparar el contexto para el PromptBuilder
-
----
-
-## v1.2
-
-### Retrieval Strategies
-
-Nuevos mecanismos de recuperación.
-
-Ejemplos:
-
-- Top-K
-- Similaridad semántica
-- Scoring híbrido
-- Recencia
-- Frecuencia
-- Importancia
-
----
-
-## v1.3
-
-### Memory Consolidation
-
-Optimización de la memoria.
+Mejorar completamente la experiencia de uso en consola.
 
 Incluye:
 
-- consolidación
-- deduplicación
-- fusión automática
-- olvido controlado
-- compresión de recuerdos
+- Paneles.
+- Colores.
+- Tablas.
+- Árboles.
+- Separadores.
+- Mejor visualización del prompt.
+- Mejor visualización de la memoria recuperada.
+- Estadísticas de tokens.
+- Flujo visual más claro.
+
+No modifica la lógica del agente.
 
 ---
 
-## v1.4
+## Versionado
 
-### Memory Importance
+El proyecto utiliza **Semantic Versioning**.
 
-Cada recuerdo tendrá una importancia explícita.
+```
+MAJOR.MINOR.PATCH
+```
 
-Permitirá:
+Donde:
 
-- priorizar recuerdos
-- proteger recuerdos importantes
-- mejorar la recuperación
+- **MAJOR** → cambios incompatibles o hitos importantes.
+- **MINOR** → nuevas funcionalidades compatibles.
+- **PATCH** → correcciones de errores.
 
----
+Versión actual:
 
-## v1.5
-
-### Temporal Memory
-
-Se incorpora información temporal.
-
-Ejemplos:
-
-- última utilización
-- fecha de creación
-- frecuencia
-- historial de modificaciones
-
----
-
-# Serie 2.x
-
-Segunda generación del framework.
-
-En esta etapa la arquitectura estará orientada a agentes autónomos.
-
-Objetivos:
-
-- planificación
-- reflexión
-- memoria jerárquica
-- aprendizaje continuo
-- herramientas
-- múltiples agentes
-- razonamiento de largo plazo
+```
+v1.0.0
+```
