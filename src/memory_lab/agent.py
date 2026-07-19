@@ -8,6 +8,7 @@ v1.1.0
 - Pipeline visual
 - Context Blocks
 - Unified Memory View
+- Session Dashboard
 """
 
 from memory_lab.llm import call_llm
@@ -29,6 +30,7 @@ from memory_lab.models.context_block import (
 from memory_lab.prompt_builder import (
     PromptBuilder,
 )
+
 
 
 #
@@ -66,7 +68,6 @@ from memory_lab.services.episode_retriever import (
 )
 
 
-
 from memory_lab.services.semantic_extractor import (
     SemanticExtractor,
 )
@@ -78,7 +79,6 @@ from memory_lab.services.semantic_manager import (
 from memory_lab.services.semantic_retriever import (
     SemanticRetriever,
 )
-
 
 
 from memory_lab.services.procedural_extractor import (
@@ -115,6 +115,10 @@ from memory_lab.views.retrieved_memory_view import (
     show_retrieved_memory,
 )
 
+from memory_lab.views.session_stats_view import (
+    show_session_stats,
+)
+
 
 
 #
@@ -129,6 +133,10 @@ from memory_lab.utils.pipeline import (
     Pipeline,
 )
 
+from memory_lab.utils.session_stats import (
+    SessionStats,
+)
+
 
 
 class Agent:
@@ -141,6 +149,9 @@ class Agent:
 
 
         self.prompt_builder = PromptBuilder()
+
+
+        self.stats = SessionStats()
 
 
 
@@ -219,6 +230,9 @@ class Agent:
             "/episodes":
                 self.show_episodic_memory,
 
+            "/stats":
+                self.show_stats,
+
             "/help":
                 self.show_help,
 
@@ -227,7 +241,7 @@ class Agent:
 
 
     def run(self) -> None:
-
+        
 
         Console.title(
             "LLM MEMORY LAB v1.1.0",
@@ -281,12 +295,21 @@ class Agent:
             )
 
 
-
+    
     def handle_chat(
         self,
         user_message: str,
     ) -> None:
 
+
+        self.stats.reset()
+
+
+        self.stats.messages = (
+            len(self.conversation.messages)
+            +
+            1
+        )
 
 
         self.conversation.add_user_message(
@@ -314,6 +337,11 @@ class Agent:
         # Retrieve Memory
         #
 
+        self.stats.start_timer(
+            "retrieval",
+        )
+
+
         Pipeline.step(
             "Retrieving episodic memory",
         )
@@ -321,6 +349,11 @@ class Agent:
 
         episodes = self.episode_retriever.retrieve(
             self.conversation,
+        )
+
+
+        self.stats.episodic_retrieved = len(
+            episodes,
         )
 
 
@@ -335,6 +368,11 @@ class Agent:
         )
 
 
+        self.stats.semantic_retrieved = len(
+            facts,
+        )
+
+
 
         Pipeline.step(
             "Retrieving procedural memory",
@@ -343,6 +381,18 @@ class Agent:
 
         procedures = self.procedural_retriever.retrieve(
             self.conversation,
+        )
+
+
+        self.stats.procedural_retrieved = len(
+            procedures,
+        )
+
+
+        self.stats.retrieval_time = (
+            self.stats.stop_timer(
+                "retrieval",
+            )
         )
 
 
@@ -358,6 +408,11 @@ class Agent:
         #
         # Build Context Blocks
         #
+
+        self.stats.start_timer(
+            "prompt",
+        )
+
 
         blocks: list[ContextBlock] = []
 
@@ -406,18 +461,11 @@ class Agent:
 
 
         context = PromptContext(
-
             conversation=self.conversation,
-
             blocks=blocks,
-
         )
 
 
-
-        #
-        # Prompt
-        #
 
         Pipeline.step(
             "Building prompt",
@@ -427,6 +475,14 @@ class Agent:
         messages = self.prompt_builder.build(
             context,
         )
+
+
+        self.stats.prompt_time = (
+            self.stats.stop_timer(
+                "prompt",
+            )
+        )
+
 
 
         show_prompt(
@@ -439,6 +495,11 @@ class Agent:
         # LLM
         #
 
+        self.stats.start_timer(
+            "llm",
+        )
+
+
         Pipeline.step(
             "Calling LLM",
         )
@@ -447,6 +508,14 @@ class Agent:
         response = call_llm(
             messages,
         )
+
+
+        self.stats.llm_time = (
+            self.stats.stop_timer(
+                "llm",
+            )
+        )
+
 
 
         self.conversation.add_assistant_message(
@@ -458,6 +527,11 @@ class Agent:
         #
         # Memory Extraction
         #
+
+        self.stats.start_timer(
+            "extraction",
+        )
+
 
         Pipeline.step(
             "Extracting episodic memory",
@@ -506,6 +580,13 @@ class Agent:
         )
 
 
+        self.stats.extraction_time = (
+            self.stats.stop_timer(
+                "extraction",
+            )
+        )
+
+
 
         Pipeline.finish(
             "Processing completed",
@@ -524,8 +605,13 @@ class Agent:
 
 
 
-    def memorize(self) -> None:
+        show_session_stats(
+            self.stats,
+        )
 
+
+
+    def memorize(self) -> None:
 
 
         if not self.conversation.messages:
@@ -585,7 +671,9 @@ class Agent:
 
 
 
-    def show_episodic_memory(self) -> None:
+    def show_episodic_memory(
+        self,
+    ) -> None:
 
 
         episodes = self.episode_repository.load_all()
@@ -597,7 +685,20 @@ class Agent:
 
 
 
-    def show_help(self) -> None:
+    def show_stats(
+        self,
+    ) -> None:
+
+
+        show_session_stats(
+            self.stats,
+        )
+
+
+
+    def show_help(
+        self,
+    ) -> None:
 
 
         Console.title(
@@ -617,6 +718,11 @@ class Agent:
 
         Console.text(
             "/episodes",
+        )
+
+
+        Console.text(
+            "/stats",
         )
 
 
