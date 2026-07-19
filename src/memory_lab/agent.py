@@ -14,6 +14,9 @@ from memory_lab.repositories.episode_repository import (
 from memory_lab.repositories.semantic_repository import (
     SemanticRepository,
 )
+from memory_lab.repositories.procedural_repository import (
+    ProceduralRepository,
+)
 
 from memory_lab.services.context_assembler import (
     ContextAssembler,
@@ -31,6 +34,13 @@ from memory_lab.services.semantic_extractor import (
 )
 from memory_lab.services.semantic_manager import (
     SemanticManager,
+)
+
+from memory_lab.services.procedural_extractor import (
+    ProceduralExtractor,
+)
+from memory_lab.services.procedural_manager import (
+    ProceduralManager,
 )
 
 from memory_lab.utils.printer import (
@@ -65,6 +75,8 @@ class Agent:
 
         self.semantic_repository = SemanticRepository()
 
+        self.procedural_repository = ProceduralRepository()
+
         #
         # Context
         #
@@ -72,6 +84,7 @@ class Agent:
         self.context_assembler = ContextAssembler(
             episode_repository=self.episode_repository,
             semantic_repository=self.semantic_repository,
+            procedural_repository=self.procedural_repository,
         )
 
         #
@@ -94,6 +107,16 @@ class Agent:
             repository=self.semantic_repository,
         )
 
+        #
+        # Procedural memory
+        #
+
+        self.procedural_extractor = ProceduralExtractor()
+
+        self.procedural_manager = ProceduralManager(
+            repository=self.procedural_repository,
+        )
+
         self.commands = {
             "/memorize": self.memorize,
             "/episodes": self.show_episodic_memory,
@@ -103,7 +126,7 @@ class Agent:
     def run(self) -> None:
 
         print_title("LLM MEMORY LAB")
-        print_text("Phase 0.9 - Context Assembler")
+        print_text("Version 1.0.0 - Procedural Memory")
 
         while True:
 
@@ -198,6 +221,18 @@ class Agent:
             fact,
         )
 
+        #
+        # Procedural memory
+        #
+
+        procedure = self.procedural_extractor.extract(
+            self.conversation,
+        )
+
+        self.procedural_manager.process(
+            procedure,
+        )
+
         print_title(
             "ASSISTANT",
         )
@@ -236,6 +271,14 @@ class Agent:
 
         self.semantic_manager.process(
             fact,
+        )
+
+        procedure = self.procedural_extractor.extract(
+            self.conversation,
+        )
+
+        self.procedural_manager.process(
+            procedure,
         )
 
         print_title(
