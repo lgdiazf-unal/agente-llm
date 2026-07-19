@@ -6,12 +6,11 @@ Sistema centralizado de salida por terminal.
 Responsable de:
 - títulos
 - secciones
-- texto
-- JSON
+- paneles
+- colores
 - estados
-- separadores
+- JSON
 """
-
 
 from __future__ import annotations
 
@@ -20,7 +19,25 @@ import json
 
 class Console:
 
-    WIDTH = 60
+    WIDTH = 70
+
+
+    class Color:
+
+        RESET = "\033[0m"
+
+        CYAN = "\033[96m"
+
+        GREEN = "\033[92m"
+
+        YELLOW = "\033[93m"
+
+        RED = "\033[91m"
+
+        BLUE = "\033[94m"
+
+        MAGENTA = "\033[95m"
+
 
 
     @staticmethod
@@ -39,12 +56,17 @@ class Console:
         Console.separator()
 
         print(
+            Console.Color.CYAN
+            +
             text.center(
                 Console.WIDTH,
             )
+            +
+            Console.Color.RESET
         )
 
         Console.separator()
+
 
 
     @staticmethod
@@ -55,10 +77,41 @@ class Console:
         print()
 
         print(
+            Console.Color.BLUE
+            +
             f"▶ {text}"
+            +
+            Console.Color.RESET
         )
 
         Console.separator()
+
+
+
+    @staticmethod
+    def panel(
+        title: str,
+        content: str,
+    ) -> None:
+
+        Console.separator()
+
+        print(
+            Console.Color.MAGENTA
+            +
+            title
+            +
+            Console.Color.RESET
+        )
+
+        Console.separator()
+
+        print(
+            content
+        )
+
+        Console.separator()
+
 
 
     @staticmethod
@@ -71,14 +124,20 @@ class Console:
         )
 
 
+
     @staticmethod
     def success(
         text: str,
     ) -> None:
 
         print(
+            Console.Color.GREEN
+            +
             f"✓ {text}"
+            +
+            Console.Color.RESET
         )
+
 
 
     @staticmethod
@@ -87,8 +146,13 @@ class Console:
     ) -> None:
 
         print(
+            Console.Color.YELLOW
+            +
             f"⚠ {text}"
+            +
+            Console.Color.RESET
         )
+
 
 
     @staticmethod
@@ -97,8 +161,13 @@ class Console:
     ) -> None:
 
         print(
+            Console.Color.RED
+            +
             f"✗ {text}"
+            +
+            Console.Color.RESET
         )
+
 
 
     @staticmethod
@@ -113,6 +182,7 @@ class Console:
                 ensure_ascii=False,
             )
         )
+
 
 
     @staticmethod
