@@ -1,23 +1,32 @@
-from memory_lab.models.conversation import Conversation
-from memory_lab.utils.printer import (
-    print_separator,
-    print_text,
-    print_title,
+"""
+Vista para mostrar la conversación actual.
+"""
+
+from memory_lab.models.conversation import (
+    Conversation,
+)
+
+from memory_lab.utils.console import (
+    Console,
 )
 
 
-def show_conversation(conversation: Conversation) -> None:
+def show_conversation(
+    conversation: Conversation,
+) -> None:
 
-    print_title("WORKING MEMORY")
-
-    if not conversation.messages:
-
-        print_text("(vacía)")
-        return
+    Console.section(
+        "💬 CONVERSATION",
+    )
 
     for message in conversation.messages:
 
-        print_text(f"[{message.role.upper()}]")
-        print_text(message.content)
+        Console.text(
+            f"{message.role.upper()}:"
+        )
 
-        print_separator()
+        Console.text(
+            message.content,
+        )
+
+        Console.blank()

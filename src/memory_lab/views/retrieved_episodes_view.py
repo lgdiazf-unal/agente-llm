@@ -1,28 +1,35 @@
 """
-Vista que muestra los episodios recuperados
-antes de construir el prompt.
+Vista para mostrar episodios recuperados.
 """
 
-from memory_lab.models.episode import Episode
-from memory_lab.utils.printer import print_text, print_title
+from memory_lab.models.episode import (
+    Episode,
+)
+
+from memory_lab.utils.console import (
+    Console,
+)
 
 
 def show_retrieved_episodes(
     episodes: list[Episode],
 ) -> None:
 
-    print_title("RETRIEVED EPISODES")
+    Console.section(
+        "🔎 RETRIEVED EPISODES",
+    )
 
     if not episodes:
 
-        print_text("No episodes retrieved.")
+        Console.text(
+            "Sin episodios relevantes.",
+        )
 
         return
 
-    for index, episode in enumerate(episodes, start=1):
 
-        print(f"[{index}]")
+    for episode in episodes:
 
-        print(episode.summary)
-
-        print()
+        Console.text(
+            f"- {episode.summary}"
+        )

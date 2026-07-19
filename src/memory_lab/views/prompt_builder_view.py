@@ -1,11 +1,29 @@
-from memory_lab.utils.printer import (
-    print_json,
-    print_title,
+"""
+Vista para mostrar el prompt generado.
+"""
+
+from memory_lab.utils.console import (
+    Console,
 )
 
 
-def show_prompt(messages: list[dict]) -> None:
+def show_prompt(
+    messages: list[dict],
+) -> None:
 
-    print_title("PROMPT")
+    Console.section(
+        "📝 PROMPT",
+    )
 
-    print_json(messages)
+
+    for message in messages:
+
+        Console.text(
+            message["role"].upper()
+        )
+
+        Console.text(
+            message["content"]
+        )
+
+        Console.blank()
